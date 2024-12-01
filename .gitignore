@@ -1,0 +1,4 @@
+input/day-??.txt
+bin/*
+build
+.vscode
