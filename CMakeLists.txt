@@ -35,10 +35,11 @@ foreach(current_target IN LISTS TARGETS)
     target_compile_options(${current_target} PRIVATE ${WARNING_FLAGS_CXX} $<$<CONFIG:Debug>:-fsanitize=undefined,address -g3 -Og>)
     target_link_options(${current_target} PRIVATE ${WARNING_FLAGS_CXX} $<$<CONFIG:Debug>:-fsanitize=undefined,address -g3 -Og>)
 
-    target_compile_definitions(${current_target} PRIVATE AOC_INPUT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/input/${current_target}.txt")
-    target_compile_definitions(${current_target} PRIVATE AOC_INPUT_EXAMPLE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/input/${current_target}-example.txt")
-    target_compile_definitions(${current_target} PRIVATE AOC_INPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/input/")
-    target_compile_definitions(${current_target} PRIVATE AOC_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/${current_target}/")
+    # target_compile_definitions(${current_target} PRIVATE AOC_INPUT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/input/${current_target}.txt")
+    # target_compile_definitions(${current_target} PRIVATE AOC_INPUT_EXAMPLE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/input/${current_target}-example.txt")
+    # target_compile_definitions(${current_target} PRIVATE AOC_INPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/input/")
+    # target_compile_definitions(${current_target} PRIVATE AOC_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    target_compile_definitions(${current_target} PRIVATE AOC_DAY_NAME="${current_target}")
 
     if(ipo_available AND (NOT CMAKE_BUILD_TYPE MATCHES Debug) AND (NOT CMAKE_BUILD_TYPE MATCHES RelWithDebInfo))
         set_property(TARGET ${current_target} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
@@ -46,7 +47,12 @@ foreach(current_target IN LISTS TARGETS)
     
     add_custom_target("run-${current_target}"
         DEPENDS ${current_target}
-        COMMAND ${current_target}
+        COMMAND ${current_target} ../input/${current_target}.txt
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
+    )
+    add_custom_target("run-${current_target}-example"
+        DEPENDS ${current_target}
+        COMMAND ${current_target} ../input/${current_target}-example.txt
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
     )
 endforeach(current_target)
@@ -54,7 +60,14 @@ endforeach(current_target)
 # TODO...
 add_custom_target("run-all"
     DEPENDS ${TARGETS}
-    COMMAND day-01
-    COMMAND day-02
+    COMMAND day-01 ../input/day-01.txt
+    COMMAND day-02 ../input/day-02.txt
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
+)
+
+add_custom_target("run-all-examples"
+    DEPENDS ${TARGETS}
+    COMMAND day-01 ../input/day-01-example.txt
+    COMMAND day-02 ../input/day-02-example.txt
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
 )

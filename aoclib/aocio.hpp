@@ -8,16 +8,8 @@
 #include <cassert>
 #include <optional>
 
-#ifndef AOC_INPUT_PATH
-#define AOC_INPUT_PATH ""
-#endif
-
-#ifndef AOC_INPUT_DIR
-#define AOC_INPUT_DIR ""
-#endif
-
-#ifndef AOC_SRC_DIR
-#define AOC_SRC_DIR ""
+#ifndef AOC_DAY_NAME
+#define AOC_DAY_NAME "Undefined AOC_DAY_NAME"
 #endif
 
 namespace aocio 
@@ -211,7 +203,7 @@ static inline std::optional<IntT> parse_hex(std::string_view str)
 
 inline void print_day() 
 {
-    std::string day_name {std::filesystem::path(AOC_SRC_DIR).parent_path().filename()};
+    std::string day_name {AOC_DAY_NAME};
     
     if (day_name.size()) {
         day_name[0] = std::toupper(day_name[0]);
@@ -227,52 +219,91 @@ inline void print_day()
     std::cout << day_name << " (" << debug_release << ")\n";
 }
 
-inline bool handle_input(int argc, char* argv[], std::vector<std::string>& lines)
+enum class IOStatus {UNDEFINED = 0, INPUT_SUCCESS = 1, INPUT_HELP = 2, OUTPUT_VERBOSE = 4}; 
+
+constexpr IOStatus operator|(IOStatus a, IOStatus b)
 {
-    std::string fname = AOC_INPUT_PATH; // Default input file.
+    return static_cast<IOStatus>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+}
+constexpr IOStatus operator&(IOStatus a, IOStatus b)
+{
+    return static_cast<IOStatus>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+}
 
-    if (argc > 1) {  // Handle command-line arguments.
-        const std::string arg = str_tolower_cpy(argv[1]);
-        // a) Use the default example input file.
-        if (arg == "--example" || arg == "-e") {    
-            fname = AOC_INPUT_EXAMPLE_PATH;
-            std::cerr << "Using default example input '" << fname << "'\n";
-        } 
-        // b) Use a custom input file (relative to the current working directory).
-        else if (arg == "--input" || arg == "-i") { 
-            if (argc < 3) {
-                std::cerr << "Error: " << "missing filepath following --input\n";
-                std::cerr << "(Run with --help or -h for help)\n";
-                return false;
-            } else {
-                fname = std::string{argv[2]};
-                std::cerr << "Using input '" << fname << "'\n";
-            }
-        } 
-        // c) Show usage string.
-        else if (arg == "--help" || arg == "-h") {  
-            std::cout << "Usage:\n";
-            std::cout << "- Run without arguments to use the default input filepath ('" AOC_INPUT_PATH "')\n";
-            std::cout << "- Run with -e or --example to use the default example input filepath ('" AOC_INPUT_EXAMPLE_PATH "')\n";
-            std::cout << "- Run with -i filepath or --input filepath to use a custom input filepath (filepath relative to the working directory)\n";
-            return false;
-        }
+constexpr bool iostat_has_flag(IOStatus status, IOStatus flag)
+{
+    return (status & flag) == flag;
+}
+
+inline IOStatus handle_input(int argc, char* argv[], std::vector<std::string>& lines)
+{
+    const auto print_help = []() -> void {
+        #ifdef NDEBUG
+            #define POSTFIX ""
+        #else 
+            #define POSTFIX "_dbg"
+        #endif
+        std::cerr << "Usage: " AOC_DAY_NAME POSTFIX " [-help] puzzle_input [-v]\n" << "\t-v: use verbose output (optional)\n" << "\t-help: print this help, ignore the rest, and quit (optional)\n" << "\tpuzzle_input: your puzzle input file (optional/ignored if -help is used)\n"; 
+        #undef POSTFIX
+    };
+
+    IOStatus result = IOStatus::UNDEFINED;
+
+    std::string_view fname = ""; 
+
+    if (argc <= 1) { // Failure: Program run without arguments.
+        std::cerr << "Error: No puzzle input file.\n";
+        print_help();
+        return IOStatus::UNDEFINED;
     } 
+    else if (argc >= 2) { // Program run with at least one argument.
+        std::vector<std::string_view> args {};
+        for (int i = 1; i < argc; ++i) {
+            args.push_back(argv[i]);
+        }
+        assert(args.size() >= 1);
+        
+        if (args.front() == "-help") {  // Success: program -help ...
+            print_help();
+            return IOStatus::INPUT_SUCCESS | IOStatus::INPUT_HELP;
+        } else if (args.front() == "-v") { // program -v ...
+            result = result | IOStatus::OUTPUT_VERBOSE;
+            if (args.size() < 2 || args.at(1) == "-v" || args.at(1) == "-help") { // Failure: program -v or program -v -v ... or program -v -help ...
+                std::cerr << "Error: No puzzle input file.\n";
+                print_help();
+                return IOStatus::UNDEFINED;
+            } else { // program -v foo ...
+                fname = args.at(1);
+            }
+        } else { // program foo ...
+            fname = args.front(); 
+            if (args.size() > 1 && args.at(1) == "-v") { // program foo -v ...
+                result = result | IOStatus::OUTPUT_VERBOSE;
+            }
+        }
 
-    if (!aocio::file_getlines(fname, lines)) {
-        std::cerr << "(Run with --help or -h for help)\n";
-        return false;
+        if (iostat_has_flag(result, IOStatus::OUTPUT_VERBOSE)) {
+            assert(fname != "");
+            std::cerr << "Using input '" << fname << "'\n"; 
+        }
+    }
+
+    if (!aocio::file_getlines(fname, lines)) { // Failure.
+        print_help();
+        return IOStatus::UNDEFINED;
     }    
 
     aocio::remove_leading_empty_lines(lines);
     aocio::remove_trailing_empty_lines(lines);
-    if (!lines.size()) {
-        std::cerr << "Error: Input file '" << fname << "' is empty.\n";
-        std::cerr << "(Run with --help or -h for help)\n";
-        return false;
+    if (!lines.size()) { // Failure.
+        std::cerr << "Error: Input file '" << fname << "' is empty (or contains only whitespace).\n";
+        print_help();
+        return IOStatus::UNDEFINED;
     }
 
-    return true;
+    // Success.
+    assert(!iostat_has_flag(result, IOStatus::INPUT_HELP));
+    return result | IOStatus::INPUT_SUCCESS;
 }
 
 }

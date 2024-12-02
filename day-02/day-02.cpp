@@ -102,8 +102,12 @@ int main(int argc, char* argv[])
     aocio::print_day();
 
     std::vector<std::string> lines;
-    if (!aocio::handle_input(argc, argv, lines)) {
+    const aocio::IOStatus status = aocio::handle_input(argc, argv, lines);
+
+    if (!aocio::iostat_has_flag(status, aocio::IOStatus::INPUT_SUCCESS)) {
         return EXIT_FAILURE;
+    } else if (aocio::iostat_has_flag(status, aocio::IOStatus::INPUT_HELP)) {
+        return EXIT_SUCCESS; 
     }
 
     try {
