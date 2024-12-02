@@ -67,7 +67,7 @@ int part_two(const std::vector<std::string>& lines)
 int main(int argc, char* argv[])
 {
     aocio::print_day();
-    
+
     std::vector<std::string> lines;
     if (!aocio::handle_input(argc, argv, lines)) {
         return EXIT_FAILURE;

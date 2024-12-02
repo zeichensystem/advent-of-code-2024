@@ -16,6 +16,10 @@
 #define AOC_INPUT_DIR ""
 #endif
 
+#ifndef AOC_SRC_DIR
+#define AOC_SRC_DIR ""
+#endif
+
 namespace aocio 
 {
 
@@ -23,7 +27,7 @@ inline bool file_getlines(std::string_view fname, std::vector<std::string>& line
 {
     std::ifstream file {fname};
     if (!file) {
-        std::cerr << "Cannot open file " << fname << "\n";
+        std::cerr << "Error: Cannot open file '" << fname << "'\n";
         return false;
     }
 
@@ -73,8 +77,8 @@ inline void line_tokenise(const std::string& line, const std::string& delims, co
             throw std::invalid_argument("Preserved delim not in delims");
         }
     }
-    std::string::size_type start_pos = 0;
 
+    std::string::size_type start_pos = 0;
     while (start_pos < line.size()) {
         auto token_end_pos = line.find_first_of(delims, start_pos); 
         if (token_end_pos == std::string::npos) {
@@ -85,8 +89,8 @@ inline void line_tokenise(const std::string& line, const std::string& delims, co
             tokens.push_back(token);
         }
         
-        if (token_end_pos != std::string::npos && preserved_delims.size() && preserved_delims.find(line[token_end_pos]) != std::string::npos) {
-            tokens.push_back(std::string{line[token_end_pos]});
+        if (token_end_pos != std::string::npos && preserved_delims.size() && preserved_delims.find(line.at(token_end_pos)) != std::string::npos) {
+            tokens.push_back(std::string{line.at(token_end_pos)});
         }
 
         start_pos = token_end_pos + 1;
@@ -108,6 +112,23 @@ static inline void str_remove_whitespace(std::string& str)
     str.erase(no_space_end, str.end());
 }
 
+inline std::string str_tolower_cpy(std::string s) { // cf. https://en.cppreference.com/w/cpp/string/byte/tolower (last retrieved 2024-12-01)
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){return std::tolower(c);});
+    return s;
+}
+inline std::string str_toupper_cpy(std::string s) { // cf. see above
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){return std::toupper(c);});
+    return s;
+}
+
+inline std::string& str_make_lower(std::string& s) { // In-place variant; cf. see above
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){return std::tolower(c);});
+    return s;
+}
+inline std::string& str_make_upper(std::string& s) { // In-place variant; cf. see above
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){return std::toupper(c);});
+    return s;
+}
 
 static inline std::optional<int> parse_num(const std::string &str)
 {
@@ -188,19 +209,9 @@ static inline std::optional<IntT> parse_hex(std::string_view str)
     return res; 
 }
 
-inline std::string str_tolower(std::string s) { // cf. https://en.cppreference.com/w/cpp/string/byte/tolower (last retrieved 2024-12-01)
-    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){return std::tolower(c);});
-    return s;
-}
-
-inline std::string str_toupper(std::string s) { // cf. see above
-    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){return std::toupper(c);});
-    return s;
-}
-
 inline void print_day() 
 {
-    std::string day_name {std::filesystem::path(AOC_INPUT_DIR).parent_path().filename()};
+    std::string day_name {std::filesystem::path(AOC_SRC_DIR).parent_path().filename()};
     
     if (day_name.size()) {
         day_name[0] = std::toupper(day_name[0]);
@@ -218,23 +229,46 @@ inline void print_day()
 
 inline bool handle_input(int argc, char* argv[], std::vector<std::string>& lines)
 {
-    std::string_view fname = AOC_INPUT_PATH;
-    if (argc > 1) { // If the program is called with "example" or "--example" as its first argument, use the example input. 
-        const std::string arg = str_tolower(std::string{argv[1]});
-        if (arg == "example" || arg == "--example") {
+    std::string fname = AOC_INPUT_PATH; // Default input file.
+
+    if (argc > 1) {  // Handle command-line arguments.
+        const std::string arg = str_tolower_cpy(argv[1]);
+        // a) Use the default example input file.
+        if (arg == "--example" || arg == "-e") {    
             fname = AOC_INPUT_EXAMPLE_PATH;
+            std::cerr << "Using default example input '" << fname << "'\n";
+        } 
+        // b) Use a custom input file (relative to the current working directory).
+        else if (arg == "--input" || arg == "-i") { 
+            if (argc < 3) {
+                std::cerr << "Error: " << "missing filepath following --input\n";
+                std::cerr << "(Run with --help or -h for help)\n";
+                return false;
+            } else {
+                fname = std::string{argv[2]};
+                std::cerr << "Using input '" << fname << "'\n";
+            }
+        } 
+        // c) Show usage string.
+        else if (arg == "--help" || arg == "-h") {  
+            std::cout << "Usage:\n";
+            std::cout << "- Run without arguments to use the default input filepath ('" AOC_INPUT_PATH "')\n";
+            std::cout << "- Run with -e or --example to use the default example input filepath ('" AOC_INPUT_EXAMPLE_PATH "')\n";
+            std::cout << "- Run with -i filepath or --input filepath to use a custom input filepath (filepath relative to the working directory)\n";
+            return false;
         }
-    }
+    } 
 
     if (!aocio::file_getlines(fname, lines)) {
-        std::cerr << "handle_input Error: " << "File '" << fname << "' not found\n";
+        std::cerr << "(Run with --help or -h for help)\n";
         return false;
     }    
-    
+
     aocio::remove_leading_empty_lines(lines);
     aocio::remove_trailing_empty_lines(lines);
     if (!lines.size()) {
-        std::cerr << "handle_input Error: " << "Input is empty";
+        std::cerr << "Error: Input file '" << fname << "' is empty.\n";
+        std::cerr << "(Run with --help or -h for help)\n";
         return false;
     }
 
