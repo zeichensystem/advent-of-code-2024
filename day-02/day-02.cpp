@@ -6,10 +6,11 @@
   
     Solutions: 
         - Part 1: 432 (Example: 2)
-        - Part 2: 
+        - Part 2: 488 (Example: 4)
     Notes:  
         - Part 1: 
-        - Part 2:
+        - Part 2: Was about to solve it "efficiently", but then just went with a simple quadratic brute-force solution 
+                 (checking all possible report variations with one level removed until one of them, or none, is found to be safe).
 */
 
 bool report_is_safe(const std::vector<int>& levels)
@@ -37,6 +38,28 @@ bool report_is_safe(const std::vector<int>& levels)
     return true;
 }
 
+bool report_is_safe_dampened(const std::vector<int>& levels)
+{
+    if (report_is_safe(levels)) { // Report is already safe without the "problem dampening".
+        return true; 
+    }
+
+    // Try all variations of the report with one level removed until a safe report is found, or none is found (brute force with time O(n^2)).
+    for (size_t remove_idx = 0; remove_idx < levels.size(); ++remove_idx) { 
+        std::vector<int> one_removed;
+        for (size_t idx = 0; idx < levels.size(); ++idx) { 
+            if (idx != remove_idx) {
+                one_removed.push_back(levels.at(idx));
+            }
+        }
+        if (report_is_safe(one_removed)) { // Current report variation is safe.
+            return true;
+        }
+    }
+    
+    return false; // No safe report variation was found.
+}
+
 void parse_reports(const std::vector<std::string>& lines, std::vector<std::vector<int>>& reports)
 {
     for (const std::string& line : lines) {
@@ -53,22 +76,25 @@ void parse_reports(const std::vector<std::string>& lines, std::vector<std::vecto
     }
 }
 
-int part_one(const std::vector<std::string>& lines)
+int part_one(const std::vector<std::string>& lines, bool use_problem_dampener = false)
 {
     std::vector<std::vector<int>> reports; 
     parse_reports(lines, reports);
 
     int safe_reports = 0; 
     for (const auto& report : reports) {
-        // std::cout << (report_is_safe(report) ? "Safe" : "Unsafe") << "\n";
-        safe_reports += report_is_safe(report) ? 1 : 0;
+        if (!use_problem_dampener) {
+            safe_reports += report_is_safe(report) ? 1 : 0;
+        } else {
+            safe_reports += report_is_safe_dampened(report) ? 1 : 0;
+        }
     }
     return safe_reports;
 }
 
 int part_two(const std::vector<std::string>& lines)
 {
-    return -1; 
+    return part_one(lines, true); 
 }
 
 int main(int argc, char* argv[])
