@@ -14,74 +14,53 @@
 
 int part_one(const std::vector<std::string>& lines, bool part_two = false)
 {
-    constexpr int MAX_DIGITS = 3;
-    constexpr int NUM_OPERANDS = 2;
-    const std::string input = aocio::str_without_whitespace(
-        std::reduce(lines.cbegin(), lines.cend(), std::string{""}, [](const std::string& a, const std::string& b) -> std::string { return a + b; })
-    );
-    
-    int mul_sum = 0; 
-    std::string::size_type i_start = 0;
+    constexpr int MUL_MAX_DIGITS = 3, MUL_NUM_OPERANDS = 2;
+    const std::string input = aocio::str_without_whitespace(std::reduce(lines.cbegin(), lines.cend(), std::string{""}, std::plus<std::string>{}));
+    int total_mul_sum = 0; 
 
-    while (i_start < input.size()) {
-        i_start = input.find("mul(", i_start);
-        if (i_start == std::string::npos) {
-            return mul_sum;
-        }
-
+    for (auto idx = input.find("mul("); idx < input.size(); idx = input.find("mul(", idx)) {
         bool mul_enabled = true;
         if (part_two) {
-            const auto dont_i = input.rfind("don't()", i_start);
-            const auto do_i = input.rfind("do()", i_start);
-            if (dont_i != std::string::npos) {
-                if (do_i != std::string::npos && do_i > dont_i) {
+            const auto dont_idx = input.rfind("don't()", idx), do_idx = input.rfind("do()", idx);
+            if (dont_idx != std::string::npos) {
+                if (do_idx != std::string::npos && do_idx > dont_idx) { // The most recent do/don't instruction before the current "mul(" was "do"
                     mul_enabled = true;
-                } else {
+                } else { // The most recent do/don't instruction before the current "mul(" was "don't"
                     mul_enabled = false;
                 }
             }
         }
 
-        const auto parse_operand = [&input, &i_start](bool is_last) -> std::optional<int> { // Gets the next operand inside mul(
-            int num = 0; 
-            int n_digits = 0; 
-            while (i_start < input.size()) {
-                const auto digit = aocio::parse_digit(input.at(i_start)); 
-                if (!digit.has_value()) {
-                    if ((!is_last && input.at(i_start) == ',') || (is_last && input.at(i_start) == ')')) {
-                        ++i_start;
-                        return num;
-                    } 
-                    return {};
-                }
-                num = num * 10 + digit.value(); 
-                ++n_digits; 
-                ++i_start;
-                if (n_digits > MAX_DIGITS) {
-                    return {};
-                }
+        idx += 4; // Make idx point to the first digit of the current mul-instruction's first operand (assuming the current mul-instruction will be valid).
+
+        const auto parse_operand = [&input, &idx](bool is_last_op) -> std::optional<int> {  
+            // Parses an operand inside a mul-instruction (assumes idx points to the first character of the operand to be parsed).
+            // Advances idx to point to the first character of the next operand (or to the character after the closing parenthesis if it was the last operand, or to the offending invalid char).
+            int operand = 0; 
+            for (int n_digits = 0; idx < input.size() && n_digits <= MUL_MAX_DIGITS; ++n_digits) {
+                const char c = input.at(idx); 
+                if (const auto digit = aocio::parse_digit(c); digit.has_value()) {
+                    operand = operand * 10 + digit.value();
+                    ++idx;
+                } else {
+                    const bool is_valid_end_char = (!is_last_op && c == ',') || (is_last_op && c == ')');
+                    return (n_digits && is_valid_end_char) ? (++idx, operand) : std::optional<int>{}; // Only increment idx if the operand was valid.
+                } 
             }
             return {};
         };
 
-        // std::cout << input.substr(i_start, 12) << "\n";
-        i_start += 4; // Advance to the first char after 'mul('
-
-        for (int operand_i = 0, mul_res = 1; operand_i < NUM_OPERANDS; ++operand_i) {
-            bool is_last = operand_i == (NUM_OPERANDS - 1);
-            auto op = parse_operand(is_last);
-            if (!op.has_value()) {
+        for (int op_i = 0, mul = 1; op_i < MUL_NUM_OPERANDS; ++op_i) { // Try to parse the operands of the current mul instruction.
+            const bool is_last_op = op_i == (MUL_NUM_OPERANDS - 1);
+            if (const auto op = parse_operand(is_last_op); op.has_value()) {
+                mul *= op.value();
+                total_mul_sum = (is_last_op && mul_enabled) ? total_mul_sum + mul : total_mul_sum;
+            } else {
                 break;
-            }
-            // std::cout << "op: " << op.value() << "\n";
-            mul_res *= op.value();
-            if (is_last && mul_enabled) {
-                mul_sum += mul_res;
             }
         }
     }
-
-    return mul_sum;
+    return total_mul_sum;
 }
 
 int part_two(const std::vector<std::string>& lines)
