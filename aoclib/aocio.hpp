@@ -97,11 +97,12 @@ static inline std::string str_without_whitespace(std::string_view str)
     return result;
 }
 
-static inline void str_remove_whitespace(std::string& str) 
+static inline std::string& str_remove_whitespace(std::string& str) 
 {
     auto is_ws = [](char c) -> bool { return c == ' ' || c == '\t'; }; 
     auto no_space_end = std::remove_if(str.begin(), str.end(), is_ws);
     str.erase(no_space_end, str.end());
+    return str;
 }
 
 inline std::string str_tolower_cpy(std::string s) { // cf. https://en.cppreference.com/w/cpp/string/byte/tolower (last retrieved 2024-12-01)

@@ -1,4 +1,5 @@
 #include <numeric>
+#include <array>
 #include "../aoclib/aocio.hpp"
 
 /*
