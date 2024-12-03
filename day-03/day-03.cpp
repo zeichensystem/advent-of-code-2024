@@ -6,13 +6,13 @@
   
     Solutions: 
         - Part 1: 182780583 (Example: 161)
-        - Part 2: 
+        - Part 2:  90772405 (Example:  48)
     Notes:  
         - Part 1: 
         - Part 2:
 */
 
-int part_one(const std::vector<std::string>& lines)
+int part_one(const std::vector<std::string>& lines, bool part_two = false)
 {
     constexpr int MAX_DIGITS = 3;
     constexpr int NUM_OPERANDS = 2;
@@ -22,11 +22,24 @@ int part_one(const std::vector<std::string>& lines)
     
     int mul_sum = 0; 
     std::string::size_type i_start = 0;
-    
+
     while (i_start < input.size()) {
         i_start = input.find("mul(", i_start);
         if (i_start == std::string::npos) {
             return mul_sum;
+        }
+
+        bool mul_enabled = true;
+        if (part_two) {
+            const auto dont_i = input.rfind("don't()", i_start);
+            const auto do_i = input.rfind("do()", i_start);
+            if (dont_i != std::string::npos) {
+                if (do_i != std::string::npos && do_i > dont_i) {
+                    mul_enabled = true;
+                } else {
+                    mul_enabled = false;
+                }
+            }
         }
 
         const auto parse_operand = [&input, &i_start](bool is_last) -> std::optional<int> { // Gets the next operand inside mul(
@@ -62,7 +75,7 @@ int part_one(const std::vector<std::string>& lines)
             }
             // std::cout << "op: " << op.value() << "\n";
             mul_res *= op.value();
-            if (is_last) {
+            if (is_last && mul_enabled) {
                 mul_sum += mul_res;
             }
         }
@@ -73,7 +86,7 @@ int part_one(const std::vector<std::string>& lines)
 
 int part_two(const std::vector<std::string>& lines)
 {
-    return -1; 
+    return part_one(lines, true);
 }
 
 int main(int argc, char* argv[])
