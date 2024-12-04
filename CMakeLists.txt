@@ -27,7 +27,7 @@ if (ipo_available AND (NOT CMAKE_BUILD_TYPE MATCHES Debug) AND (NOT CMAKE_BUILD_
     message("-- IPO enabled")
 endif()
 
-set(TARGETS day-01 day-02 day-03) # Add the other days as you please.
+set(TARGETS day-01 day-02 day-03 day-04) # Add the other days as you please.
 
 list(LENGTH TARGETS NUM_TARGETS)
 
@@ -39,10 +39,6 @@ foreach(current_target IN LISTS TARGETS)
     target_compile_options(${current_target} PRIVATE ${WARNING_FLAGS_CXX} $<$<CONFIG:Debug>:-fsanitize=undefined,address -g3 -Og>)
     target_link_options(${current_target} PRIVATE ${WARNING_FLAGS_CXX} $<$<CONFIG:Debug>:-fsanitize=undefined,address -g3 -Og>)
 
-    # target_compile_definitions(${current_target} PRIVATE AOC_INPUT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/input/${current_target}.txt")
-    # target_compile_definitions(${current_target} PRIVATE AOC_INPUT_EXAMPLE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/input/${current_target}-example.txt")
-    # target_compile_definitions(${current_target} PRIVATE AOC_INPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/input/")
-    # target_compile_definitions(${current_target} PRIVATE AOC_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     target_compile_definitions(${current_target} PRIVATE AOC_DAY_NAME="${current_target}")
 
     if(ipo_available AND (NOT CMAKE_BUILD_TYPE MATCHES Debug) AND (NOT CMAKE_BUILD_TYPE MATCHES RelWithDebInfo))
@@ -67,6 +63,7 @@ add_custom_target("run-all"
     COMMAND day-01 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-01.txt
     COMMAND day-02 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-02.txt
     COMMAND day-03 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-03.txt
+    COMMAND day-04 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-04.txt
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
 
@@ -75,5 +72,6 @@ add_custom_target("run-all-examples"
     COMMAND day-01 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-01-example.txt
     COMMAND day-02 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-02-example.txt
     COMMAND day-03 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-03-example.txt
+    COMMAND day-04 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-04-example.txt
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
