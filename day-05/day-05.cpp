@@ -12,7 +12,7 @@
         - Part 2: 5723 (Example: 123)
     Notes:  
         - Part 1: 
-        - Part 2:
+        - Part 2: I think I initally had a bug in Part 2, but the solution was correct anyways. Fixed the bug now.  
 */
 
 void parse_input(const std::vector<std::string>& lines, std::unordered_map<int, std::unordered_set<int>>& ordering_rules, std::vector<std::vector<int>>& updates)
@@ -66,7 +66,7 @@ int part_one(const std::vector<std::string>& lines)
             const int page = *it;
             if (ordering_rules.contains(page)) { // The current page has "prerequisites" (pages which must come before it).
                 const std::unordered_set<int>& before = ordering_rules.at(page); 
-                for (auto after_it = it; after_it != pages.cend(); ++after_it) {
+                for (auto after_it = it; after_it != pages.cend(); ++after_it) { // Note: O(n^2) time complexity...
                     if (before.contains(*after_it)) { // A page which must come before the current page actually comes after it -> violation of the ordering rules.
                         goto next;
                     }
@@ -97,10 +97,12 @@ int part_two(const std::vector<std::string>& lines)
             bool did_swap = false;
             if (ordering_rules.contains(page)) { // The current page has "prerequisites" (pages which must come before it).
                 const std::unordered_set<int>& before = ordering_rules.at(page); 
-                for (auto after_it = it + 1; after_it != pages.end(); ++after_it) {
+                auto current_page_it = it;
+                for (auto after_it = it + 1; after_it != pages.end(); ++after_it) { // Note: O(n^2) time complexity...
                     if (before.contains(*after_it)) { // A page which must come before the current page actually comes after it -> violation of the ordering rules.
                         was_invalid = did_swap = true;
-                        std::swap(*it, *after_it);
+                        std::swap(*current_page_it, *after_it);
+                        current_page_it = after_it;
                     }
                 }
             }
