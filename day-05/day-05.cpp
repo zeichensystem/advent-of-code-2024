@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <numeric>
+#include <algorithm>
 #include "../aoclib/aocio.hpp"
 
 /*
@@ -8,7 +9,7 @@
   
     Solutions: 
         - Part 1: 4609 (Example: 143)
-        - Part 2: 
+        - Part 2: 5723 (Example: 123)
     Notes:  
         - Part 1: 
         - Part 2:
@@ -84,7 +85,38 @@ int part_one(const std::vector<std::string>& lines)
 
 int part_two(const std::vector<std::string>& lines)
 {
-    return -1; 
+    std::unordered_map<int, std::unordered_set<int>> ordering_rules; // page_n -> [before_1, before_2, ...]
+    std::vector<std::vector<int>> updates; 
+    parse_input(lines, ordering_rules, updates);
+    int sum_of_middle_pages = 0;
+
+    for (auto pages : updates) {
+        bool was_invalid = false;
+        for (auto it = pages.begin(); it != pages.end();) {
+            const int page = *it;
+            bool did_swap = false;
+            if (ordering_rules.contains(page)) { // The current page has "prerequisites" (pages which must come before it).
+                const std::unordered_set<int>& before = ordering_rules.at(page); 
+                for (auto after_it = it + 1; after_it != pages.end(); ++after_it) {
+                    if (before.contains(*after_it)) { // A page which must come before the current page actually comes after it -> violation of the ordering rules.
+                        was_invalid = did_swap = true;
+                        std::swap(*it, *after_it);
+                    }
+                }
+            }
+            if (!did_swap) {
+                ++it;
+            }
+        }
+        if (!was_invalid) {
+            continue;
+        } else if (pages.size() % 2 == 0) { // Only can find a middle value if the number of pages is uneven. 
+            throw std::invalid_argument("part_one: page has valid order, but does not have a middle value");
+        } else {
+            sum_of_middle_pages += pages.at(pages.size() / 2);
+        }
+    }
+    return sum_of_middle_pages; 
 }
 
 int main(int argc, char* argv[])
