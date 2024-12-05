@@ -18,23 +18,25 @@ using Vec2 = aocutil::Vec2<int>;
 
 int part_one(const std::vector<std::string>& lines, bool part_two = false)
 {
-    Grid<char> grid{lines}; 
-    std::vector<Vec2> candidates = grid.find_elem_positions(part_two ? 'A' : 'X');
+    const Grid<char> grid{lines}; 
+    const std::vector<Vec2> candidates = grid.find_elem_positions(part_two ? 'A' : 'X');
 
     const auto match_xmas = [&grid](const Vec2& pos) -> int { // For Part 1. 
         const std::string XMAS_STR = "XMAS";
-        std::array<int, 8> direction_matched = {0, 0, 0, 0, 0, 0, 0, 0}; 
-
-        for (int d = 0; d < std::ssize(XMAS_STR); ++d) {
-            const Vec2 d_up = {0, -d}, d_down = {0, d}, d_right = {d, 0}, d_left = {-d, 0};
-            const std::array<Vec2, 8> direction_deltas = {d_up, d_down, d_right, d_left, d_up + d_right, d_up + d_left, d_down + d_right, d_down + d_left};
-            for (size_t i = 0; i < direction_deltas.size(); ++i) {
-                if (const auto ch = grid.try_get(pos + direction_deltas.at(i)); ch.has_value() && ch.value() == XMAS_STR.at(d)) {
-                    direction_matched.at(i) += 1;
-                } 
+        const std::array<Vec2, 8> directions = aocutil::all_dirs_plus_diagonals_vec2<int>();
+        int matched_xmas = 0; 
+        for (const Vec2& direction : directions) {
+            int valid_chars = 0;  
+            for (int n = 0; n < std::ssize(XMAS_STR); ++n) {
+                if (const auto& ch = grid.try_get(pos + n * direction); ch.has_value() && ch.value() == XMAS_STR.at(n)) {
+                    ++valid_chars;
+                } else {
+                    break;
+                }
             }
-        }
-        return std::count_if(direction_matched.cbegin(), direction_matched.cend(), [&XMAS_STR](int n) {return n == std::ssize(XMAS_STR);});
+            matched_xmas += valid_chars == std::ssize(XMAS_STR) ? 1 : 0;
+        } 
+        return matched_xmas;
     };
 
     const auto match_cross_mas = [&grid](const Vec2& pos) -> int { // For Part 2. 
@@ -53,11 +55,9 @@ int part_one(const std::vector<std::string>& lines, bool part_two = false)
         return 1;
     };
 
-    int total_matches = 0; 
-    for (const Vec2& pos : candidates) {
-        total_matches += part_two ? match_cross_mas(pos) : match_xmas(pos);
-    }
-    return total_matches;
+    return std::reduce(candidates.cbegin(), candidates.cend(), 0, [&](int result, const Vec2& pos) {
+        return result + (part_two ? match_cross_mas(pos) : match_xmas(pos));
+    });
 }
 
 int part_two(const std::vector<std::string>& lines)

@@ -20,9 +20,21 @@ struct Vec2
     {
         return Vec2{.x = x - v.x, .y = y - v.y};
     }
+
+    Vec2 operator*(const T& scalar) const 
+    {
+        return Vec2{.x = x * scalar, .y = y * scalar};
+    }
+
+    friend Vec2 operator*(const T& scalar, const Vec2& v) 
+    {
+        return Vec2{.x = scalar * v.x, .y = scalar * v.y};
+    }
     
     bool operator==(const Vec2& v) const = default;
 };
+
+
 
 enum class Direction {Up, Right, Down, Left};
 
@@ -35,6 +47,17 @@ constexpr std::array<Vec2<T>, 4> all_dirs_vec2()
     constexpr Vec2<T> dir_down = up_is_positive ? Vec2<T>{.x = 0, .y = -1} : Vec2<T>{.x = 0, .y =  1};
 
     return {dir_right, dir_left, dir_up, dir_down};
+}
+
+template <typename T, bool up_is_positive = false>
+constexpr std::array<Vec2<T>, 8> all_dirs_plus_diagonals_vec2() 
+{
+    constexpr Vec2<T> dir_right = {.x = 1, .y = 0};
+    constexpr Vec2<T> dir_left = {.x = -1, .y = 0};
+    constexpr Vec2<T> dir_up   = up_is_positive ? Vec2<T>{.x = 0, .y =  1} : Vec2<T>{.x = 0, .y = -1};
+    constexpr Vec2<T> dir_down = up_is_positive ? Vec2<T>{.x = 0, .y = -1} : Vec2<T>{.x = 0, .y =  1};
+
+    return {dir_right, dir_left, dir_up, dir_down,  dir_up + dir_right, dir_up + dir_left,  dir_down + dir_right, dir_down + dir_left};
 }
 
 template <typename T, bool up_is_positive = false>
