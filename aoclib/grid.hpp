@@ -540,6 +540,28 @@ public:
         assert(false);
     }
 
+    std::vector<Vec2<int>> find_elem_positions_if(const std::function<bool(const ElemType& elem)>& predicate) const
+    {
+        std::vector<Vec2<int>> positions;
+
+        auto start_pos = cbegin(); 
+        std::size_t i = 0; 
+        while (true) {
+            assert(i <= data.size());
+            auto found_pos = std::find_if(start_pos, cend(), predicate); 
+            if (found_pos == cend()) {
+                return positions;
+            } else {
+                int idx = found_pos - cbegin();
+                assert(idx >= 0 && idx < std::ssize(data));
+                positions.push_back(idx_to_pos(idx));
+                start_pos = std::next(found_pos);
+            }
+            ++i; 
+        }
+        assert(false);
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const Grid<ElemType>& g) 
     {
         for (int row_n = 0; row_n < g.height(); ++row_n) {
