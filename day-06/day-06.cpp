@@ -1,3 +1,4 @@
+#include <thread>
 #include "../aoclib/aocio.hpp"
 #include "../aoclib/grid.hpp"
 
@@ -9,8 +10,9 @@
         - Part 2: 1919 (Example:  6)
     Notes:  
         - Part 1: 
-        - Part 2: Brute-force solution which was really slow (~42 seconds in Release mode), but got reasonably fast (~0.3 seconds in Release, ~9.5 seconds in Debug with ASAN etc.) 
-                  after I implemented Optimisation #1 and #2 below.
+        - Part 2: - Brute force solution which was really slow (~42 seconds in Release mode), but got reasonably fast (~0.3 seconds in Release, ~9.5 seconds in Debug with ASAN etc.) 
+                    after I implemented Optimisation #1 and #2 below.
+                  - Also implemented threading (brings it from ~0.3 s to ~0.17 s in Release mode, and from ~9.5 s to ~5.3 s in Debug mode with ASAN; using NUM_THREADS = 4)
 */
 
 using Vec2 = aocutil::Vec2<int>;
@@ -87,18 +89,56 @@ int part_one(const std::vector<std::string>& lines, bool part_two = false)
         return std::count_if(visited_grid.cbegin(), visited_grid.cend(), [](uint8_t flag) -> bool { return flag != DIR_NONE; });
     } 
 
-    const std::vector<Vec2> candidates = visited_grid.find_elem_positions_if([](uint8_t flag) -> bool { return flag != DIR_NONE; }); // Optimisation #2: Only consider potential obstacles in the guard's initial path.
-    int num_obstructions = 0; 
-    for (const Vec2& obstruction_pos : candidates) {
-        if (obstruction_pos == start_pos.front()) { // Don't drop obstacles on the guard...
-            continue;
+    // Optimisation #2: Only consider potential obstacles in the guard's initial path.
+    const std::vector<Vec2> candidates = visited_grid.find_elem_positions_if([](uint8_t flag) -> bool { return flag != DIR_NONE; }); 
+
+    constexpr int NUM_THREADS = 4;
+
+    if (NUM_THREADS <= 1) {
+        int num_obstructions = 0; 
+        for (const Vec2& obstruction_pos : candidates) {
+            if (obstruction_pos == start_pos.front()) { // Don't drop obstacles on the guard...
+                continue;
+            }
+            grid.set(obstruction_pos, '#');
+            num_obstructions += guard_wander(grid, visited_grid, start_pos.front()) ? 0 : 1;
+            grid.set(obstruction_pos, '.');
         }
-        grid.set(obstruction_pos, '#');
-        num_obstructions += guard_wander(grid, visited_grid, start_pos.front()) ? 0 : 1;
-        grid.set(obstruction_pos, '.');
+        return num_obstructions;
+    }
+
+    // Threading solution for practice; not really worth it performance wise (release: from ~0.3s to ~0.17s, debug: from ~9.5s to ~5.3s; with NUM_THREADS = 4 on my laptop).    
+    const auto worker = [grid, visited_grid](std::vector<Vec2>::const_iterator cbegin, std::vector<Vec2>::const_iterator cend, std::atomic<int>& num_obstructions, const Vec2& start_pos) mutable -> void {
+        for (auto pos_it = cbegin; pos_it < cend; ++pos_it) {
+            const Vec2 obstruction_pos = *pos_it;
+            if (obstruction_pos == start_pos) { // Don't drop obstacles on the guard...
+                continue;
+            }
+            grid.set(obstruction_pos, '#');
+            if (!guard_wander(grid, visited_grid, start_pos)) {
+                ++num_obstructions;
+            }
+            grid.set(obstruction_pos, '.');
+        }
+    };
+
+    std::atomic<int> num_obstructions {0};
+    std::vector<std::thread> workers;
+    const size_t increment = candidates.size() / NUM_THREADS;
+    const size_t rem = candidates.size() % NUM_THREADS;
+    
+    for (auto it = candidates.cbegin(); it < candidates.cend();) {
+        auto end_it = it + increment + (it == candidates.cbegin() ? rem : 0);
+        end_it = end_it > candidates.cend() ? candidates.cend() : end_it;
+        workers.push_back(std::thread(worker, it, end_it, std::ref(num_obstructions), std::ref(start_pos.front())));
+        it = end_it;
+    }
+    assert(workers.size() && workers.size() <= NUM_THREADS);
+
+    for (auto& w : workers) {
+        w.join();
     }
     return num_obstructions;
-    
 }
 
 int part_two(const std::vector<std::string>& lines)
