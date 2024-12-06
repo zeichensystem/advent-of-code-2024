@@ -71,41 +71,23 @@ bool guard_wander(const Grid<char>& grid, Grid<uint8_t>& visited_grid, const Vec
     return true; // Guard did not get caught in a loop.
 }
 
-int part_one(const std::vector<std::string>& lines)
+int part_one(const std::vector<std::string>& lines, bool part_two = false)
 {
-    const Grid<char> grid {lines}; 
+    Grid<char> grid{lines}; 
+    Grid<uint8_t> visited_grid(grid.width(), grid.height(), DIR_NONE); // Optimisation #1: Use a grid of uint8_t flags instead of an unordered_map<Vec2, unordered_set<Direction>>.
+
     const std::vector<Vec2> start_pos = grid.find_elem_positions('^');
     if (start_pos.size() != 1) {
         throw std::invalid_argument("part_one: No (or more than one) guard.");
     }
 
-    Grid<uint8_t> visited_grid; 
-    for (int i = 0; i < grid.height(); ++i) {
-        visited_grid.push_row(std::vector<uint8_t>(grid.width(), DIR_NONE));
-    }
-
     guard_wander(grid, visited_grid, start_pos.front());
-    return std::count_if(visited_grid.cbegin(), visited_grid.cend(), [](uint8_t flag) -> bool { return flag != DIR_NONE; });
-}
 
-int part_two(const std::vector<std::string>& lines)
-{
-    Grid<char> grid {lines}; 
-    const std::vector<Vec2> start_pos = grid.find_elem_positions('^');
-    if (start_pos.size() != 1) {
-        throw std::invalid_argument("part_two: No (or more than one) guard.");
-    }
+    if (!part_two) {
+        return std::count_if(visited_grid.cbegin(), visited_grid.cend(), [](uint8_t flag) -> bool { return flag != DIR_NONE; });
+    } 
 
-    // Optimisation #1: Use a grid of uint8_t flags instead of an unordered_map<Vec2, unordered_set<Direction>>.
-    Grid<uint8_t> visited_grid;
-    for (int i = 0; i < grid.height(); ++i) {
-        visited_grid.push_row(std::vector<uint8_t>(grid.width(), DIR_NONE));
-    }
-
-    // Optimisation #2: We only need to consider potential obstacles in the initial path of the guard. 
-    guard_wander(grid, visited_grid, start_pos.front());
-    const std::vector<Vec2> candidates = visited_grid.find_elem_positions_if([](uint8_t flag) -> bool { return flag != DIR_NONE; });
-
+    const std::vector<Vec2> candidates = visited_grid.find_elem_positions_if([](uint8_t flag) -> bool { return flag != DIR_NONE; }); // Optimisation #2: Only consider potential obstacles in the guard's initial path.
     int num_obstructions = 0; 
     for (const Vec2& obstruction_pos : candidates) {
         if (obstruction_pos == start_pos.front()) { // Don't drop obstacles on the guard...
@@ -116,6 +98,12 @@ int part_two(const std::vector<std::string>& lines)
         grid.set(obstruction_pos, '.');
     }
     return num_obstructions;
+    
+}
+
+int part_two(const std::vector<std::string>& lines)
+{
+    return part_one(lines, true);
 }
 
 int main(int argc, char* argv[])

@@ -360,6 +360,14 @@ public:
         }
     }
 
+    Grid(int width, int height, const ElemType& init_val) : width_{width}, height_{height} 
+    {
+        if (height < 0 || width < 0) {
+            throw std::invalid_argument("Grid::Grid: height or width < 0");
+        }
+        data = std::vector<ElemType>(width * height, init_val);
+    }
+
     void push_row(const RowType& row) 
     {
         if (width_ != 0 && !(std::ssize(row) == width_)) {
