@@ -8,7 +8,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (APPLE OR UNIX OR LINUX)
     set(WARNING_FLAGS_CXX -Wall -Wextra -Wpedantic -Wvla -Wshadow -Wundef -Wmisleading-indentation -Wnull-dereference -Wshadow  -Wundef -Wstrict-overflow=5 -Wsign-promo -Wcast-align -Wcast-qual -Woverloaded-virtual -Wredundant-decls -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wswitch-default -Wno-newline-eof -Wno-unused-function -Wno-unused-parameter)
-    set(CMAKE_CXX_COMPILER  "/usr/bin/clang++")
+    if (NOT DEFINED CMAKE_CXX_COMPILER)
+        set(CMAKE_CXX_COMPILER  "/usr/bin/clang++")
+    endif()
 endif ()
 
 project(aoc-2024)
@@ -27,7 +29,7 @@ if (ipo_available AND (NOT CMAKE_BUILD_TYPE MATCHES Debug) AND (NOT CMAKE_BUILD_
     message("-- IPO enabled")
 endif()
 
-set(TARGETS day-01 day-02 day-03 day-04 day-05) # Add the other days as you please.
+set(TARGETS day-01 day-02 day-03 day-04 day-05 day-06) # Add the other days as you please.
 
 list(LENGTH TARGETS NUM_TARGETS)
 
@@ -65,6 +67,7 @@ add_custom_target("run-all"
     COMMAND day-03 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-03.txt
     COMMAND day-04 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-04.txt
     COMMAND day-05 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-05.txt
+    COMMAND day-06 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-06.txt
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
 
@@ -75,5 +78,6 @@ add_custom_target("run-all-examples"
     COMMAND day-03 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-03-example.txt
     COMMAND day-04 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-04-example.txt
     COMMAND day-05 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-05-example.txt
+    COMMAND day-06 ${CMAKE_CURRENT_SOURCE_DIR}/input/day-06-example.txt
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
