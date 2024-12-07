@@ -5,11 +5,11 @@
     Problem: https://adventofcode.com/2024/day/7
   
     Solutions: 
-        - Part 1: 6083020304036 (Example: 3749)
-        - Part 2: 
+        - Part 1:  6083020304036  (Example:  3749)
+        - Part 2: 59002246504791  (Example: 11387)
     Notes:  
-        - Part 1: 
-        - Part 2:
+        - Part 1: Recursive backtracking for equation_has_solution()
+        - Part 2: Only needed to define concat_op()
 */
 
 struct Equation {
@@ -35,7 +35,6 @@ std::vector<Equation> parse_equations(const std::vector<std::string>& lines)
         } else {
             throw std::invalid_argument("parse_equation: Equation result not a number.");
         }
-        
         for (size_t i = 2; i < toks.size(); ++i) {
             if (auto operand = aocio::parse_num_i64(toks.at(i)); operand.has_value()) {
                 eq.operands.push_back(operand.value());
@@ -48,7 +47,6 @@ std::vector<Equation> parse_equations(const std::vector<std::string>& lines)
         }
         equations.push_back(eq);
     }
-
     return equations;
 }
 
@@ -72,9 +70,22 @@ bool equation_has_solution(const std::vector<BinaryOperator>& operators, const E
     return false;
 }
 
-int64_t part_one(const std::vector<std::string>& lines)
+int64_t concat_op(int64_t lhs, int64_t rhs)
 {
-    const std::vector<BinaryOperator> operators = {std::plus<int64_t>(), std::multiplies<int64_t>()};
+    assert(lhs > 0 && rhs >= 0);
+    int64_t n = 10;
+    while (n <= rhs) {
+        n *= 10;
+    }
+    return lhs * n + rhs;
+}
+
+int64_t part_one(const std::vector<std::string>& lines, bool part_two = false)
+{
+    std::vector<BinaryOperator> operators = {std::plus<int64_t>(), std::multiplies<int64_t>()};
+    if (part_two) {
+        operators.push_back(concat_op);
+    }
 
     std::vector<Equation> equations = parse_equations(lines);
     return std::reduce(equations.cbegin(), equations.cend(), int64_t{0}, [&](int64_t result, const Equation& eq) -> int64_t {
@@ -87,7 +98,7 @@ int64_t part_one(const std::vector<std::string>& lines)
 
 int64_t part_two(const std::vector<std::string>& lines)
 {
-    return -1; 
+    return part_one(lines, true); 
 }
 
 int main(int argc, char* argv[])
