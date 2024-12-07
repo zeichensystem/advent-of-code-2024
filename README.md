@@ -10,17 +10,25 @@ You need a C++20 compiler and cmake.
 
 ### 1. Configure cmake and generate build systems
 Navigate to the top level of this repository (the directory where [CMakeLists.txt](CMakeLists.txt) is located) and create your build directories, for instance: 
+
 `mkdir -p build/Release build/Debug`
 
 Then, run:
+
 `cmake -DCMAKE_BUILD_TYPE=Release -S . -B build/Release`
+
 `cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build/Debug`
-to configure cmake and generate the release build system into your build directory `build/Release` (and the debug build system into your build directory `build/Debug`). (If you do not run the commands at the top level of this repository, you have to run them with `-S path-to-this-repo` instead of `-S .` like above.)
+
+to generate the release build system into your build directory `build/Release` (and the debug build system into your build directory `build/Debug`). (If you do not run the commands at the top level of this repository, you have to run them with `-S path-to-this-repo` instead of `-S .` like above.)
 
 You can also set `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=` if you want to use a custom output directory for the compiled binaries; by default, they will be put into the `bin/` directory at the root of this repository.
 
 ### 2. Build
-Run `cmake --build build/Release --target day-nn` to build the release-mode executable for `day-nn` (or run `cmake --build build/Release` to build the release-mode executables for all days, but this might take a while).  
+Run 
+
+`cmake --build build/Release --target day-nn` 
+
+to build the release-mode executable for `day-nn` (or run `cmake --build build/Release` to build the release-mode executables for all days, but this might take a while).  
 
 The resulting executable will be called `day-nn` (or `day-nn_dbg` for debug builds). By default, it will be put into the `bin/` directory at the root of this repository (or into the directory you specified with `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=` in step 1).
 

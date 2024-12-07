@@ -81,7 +81,7 @@ inline void line_tokenise(const std::string& line, const std::string& delims, co
             tokens.push_back(token);
         }
         
-        if (token_end_pos != std::string::npos && preserved_delims.size() && preserved_delims.find(line.at(token_end_pos)) != std::string::npos) {
+        if (token_end_pos < line.size() && preserved_delims.size() && preserved_delims.find(line.at(token_end_pos)) != std::string::npos) {
             tokens.push_back(std::string{line.at(token_end_pos)});
         }
 
