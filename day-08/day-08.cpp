@@ -1,5 +1,6 @@
 #include <unordered_map>
 #include <unordered_set>
+#include <ranges>
 #include "../aoclib/aocio.hpp"
 #include "../aoclib/grid.hpp"
 

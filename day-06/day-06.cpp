@@ -108,8 +108,8 @@ int part_one(const std::vector<std::string>& lines, bool part_two = false)
         return num_obstructions;
     }
 
-    // Threading solution for practice; not really worth it performance wise (release: from ~0.3s to ~0.17s, debug: from ~9.5s to ~5.3s; with NUM_THREADS = 4 on my laptop).    
-
+    // Threading solution for practice; not really worth it performance wise (release: from ~0.3s to ~0.17s, debug: from ~9.5s to ~5.3s; with NUM_THREADS = 4 on my laptop).  
+      
     const auto valid_obstructions = [&grid = std::as_const(grid), &start_pos](std::vector<Vec2>::const_iterator cbegin, std::vector<Vec2>::const_iterator cend) -> int {
         Grid<char> grid_tmp {grid};
         Grid<uint8_t> visited_grid_tmp(grid_tmp.width(), grid_tmp.height(), DIR_NONE);
@@ -126,8 +126,7 @@ int part_one(const std::vector<std::string>& lines, bool part_two = false)
         }
         return num_obstructions;
     };
-
-    return aocutil::parallel_ranged_transform_reduce(NUM_THREADS, candidates.cbegin(), candidates.cend(), int{0}, std::plus{}, valid_obstructions); 
+    return aocutil::parallel_transform_reduce(NUM_THREADS, candidates.cbegin(), candidates.cend(), int{0}, std::plus{}, valid_obstructions); 
 }
 
 int part_two(const std::vector<std::string>& lines)
