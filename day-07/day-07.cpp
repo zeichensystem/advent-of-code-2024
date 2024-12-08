@@ -1,5 +1,6 @@
 #include <numeric>
 #include "../aoclib/aocio.hpp"
+#include "../aoclib/parallel.hpp"
 
 /*
     Problem: https://adventofcode.com/2024/day/7
@@ -8,8 +9,9 @@
         - Part 1:  6083020304036  (Example:  3749)
         - Part 2: 59002246504791  (Example: 11387)
     Notes:  
-        - Part 1: Recursive backtracking for equation_has_solution()
-        - Part 2: Only needed to define concat_op()
+        - Part 1: - Recursive backtracking for equation_has_solution()
+        - Part 2: - Only needed to define concat_op()
+                  - Implemented parallel_transform_reduce as an exercise (improved perf from ~130 ms to ~68 ms on my laptop)
 */
 
 struct Equation {
@@ -82,17 +84,12 @@ int64_t concat_op(int64_t lhs, int64_t rhs)
 
 int64_t part_one(const std::vector<std::string>& lines, bool part_two = false)
 {
-    std::vector<BinaryOperator> operators = {std::plus<int64_t>(), std::multiplies<int64_t>()};
-    if (part_two) {
-        operators.push_back(concat_op);
-    }
+    const std::vector<Equation> equations = parse_equations(lines);
+    std::vector<BinaryOperator> operators = !part_two ? std::vector<BinaryOperator>{std::plus{}, std::multiplies{}} 
+                                                      : std::vector<BinaryOperator>{std::plus{}, std::multiplies{}, concat_op};
 
-    std::vector<Equation> equations = parse_equations(lines);
-    return std::reduce(equations.cbegin(), equations.cend(), int64_t{0}, [&](int64_t result, const Equation& eq) -> int64_t {
-        if (equation_has_solution(operators, eq)) {
-            result += eq.result;
-        }
-        return result;
+    return aocutil::parallel_transform_reduce(equations.cbegin(), equations.cend(), int64_t{0}, std::plus{}, [&operators](const Equation& eq) -> int64_t {
+        return equation_has_solution(operators, eq) ? eq.result : 0;
     });
 }
 

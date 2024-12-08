@@ -35,9 +35,9 @@ int main(int argc, char* argv[])
     }
 
     try {
-        int p1 = part_one(lines);  
+        auto p1 = part_one(lines);  
         std::cout << "- Part 1: " << p1 << "\n";
-        int p2 = part_two(lines);
+        auto p2 = part_two(lines);
         std::cout << "- Part 2: " << p2 << "\n";
         return EXIT_SUCCESS;
     } catch (const std::exception& err) {

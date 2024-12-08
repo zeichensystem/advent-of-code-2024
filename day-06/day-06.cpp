@@ -1,6 +1,6 @@
-#include <thread>
 #include "../aoclib/aocio.hpp"
 #include "../aoclib/grid.hpp"
+#include "../aoclib/parallel.hpp"
 
 /*
     Problem: https://adventofcode.com/2024/day/6
@@ -78,12 +78,13 @@ int part_one(const std::vector<std::string>& lines, bool part_two = false)
     Grid<char> grid{lines}; 
     Grid<uint8_t> visited_grid(grid.width(), grid.height(), DIR_NONE); // Optimisation #1: Use a grid of uint8_t flags instead of an unordered_map<Vec2, unordered_set<Direction>>.
 
-    const std::vector<Vec2> start_pos = grid.find_elem_positions('^');
-    if (start_pos.size() != 1) {
+    const std::vector<Vec2> start_positions = grid.find_elem_positions('^');
+    if (start_positions.size() != 1) {
         throw std::invalid_argument("part_one: No (or more than one) guard.");
     }
+    const Vec2& start_pos = start_positions.front();
 
-    guard_wander(grid, visited_grid, start_pos.front());
+    guard_wander(grid, visited_grid, start_pos);
 
     if (!part_two) {
         return std::count_if(visited_grid.cbegin(), visited_grid.cend(), [](uint8_t flag) -> bool { return flag != DIR_NONE; });
@@ -97,48 +98,36 @@ int part_one(const std::vector<std::string>& lines, bool part_two = false)
     if (NUM_THREADS <= 1) {
         int num_obstructions = 0; 
         for (const Vec2& obstruction_pos : candidates) {
-            if (obstruction_pos == start_pos.front()) { // Don't drop obstacles on the guard...
+            if (obstruction_pos == start_pos) { // Don't drop obstacles on the guard...
                 continue;
             }
             grid.set(obstruction_pos, '#');
-            num_obstructions += guard_wander(grid, visited_grid, start_pos.front()) ? 0 : 1;
+            num_obstructions += guard_wander(grid, visited_grid, start_pos) ? 0 : 1;
             grid.set(obstruction_pos, '.');
         }
         return num_obstructions;
     }
 
     // Threading solution for practice; not really worth it performance wise (release: from ~0.3s to ~0.17s, debug: from ~9.5s to ~5.3s; with NUM_THREADS = 4 on my laptop).    
-    const auto worker = [grid, visited_grid](std::vector<Vec2>::const_iterator cbegin, std::vector<Vec2>::const_iterator cend, std::atomic<int>& num_obstructions, const Vec2& start_pos) mutable -> void {
-        for (auto pos_it = cbegin; pos_it < cend; ++pos_it) {
+
+    const auto valid_obstructions = [&grid = std::as_const(grid), &start_pos](std::vector<Vec2>::const_iterator cbegin, std::vector<Vec2>::const_iterator cend) -> int {
+        Grid<char> grid_tmp {grid};
+        Grid<uint8_t> visited_grid_tmp(grid_tmp.width(), grid_tmp.height(), DIR_NONE);
+        // aocutil::threadsafe_log("Worker thread spawned...\n");
+        int num_obstructions = 0; 
+        for (auto pos_it = cbegin; pos_it != cend; ++pos_it) {
             const Vec2 obstruction_pos = *pos_it;
             if (obstruction_pos == start_pos) { // Don't drop obstacles on the guard...
                 continue;
             }
-            grid.set(obstruction_pos, '#');
-            if (!guard_wander(grid, visited_grid, start_pos)) {
-                ++num_obstructions;
-            }
-            grid.set(obstruction_pos, '.');
+            grid_tmp.set(obstruction_pos, '#');
+            num_obstructions += guard_wander(grid_tmp, visited_grid_tmp, start_pos) ? 0 : 1;
+            grid_tmp.set(obstruction_pos, '.');
         }
+        return num_obstructions;
     };
 
-    std::atomic<int> num_obstructions {0};
-    std::vector<std::thread> workers;
-    const size_t increment = candidates.size() / NUM_THREADS;
-    const size_t rem = candidates.size() % NUM_THREADS;
-    
-    for (auto it = candidates.cbegin(); it < candidates.cend();) {
-        auto end_it = it + increment + (it == candidates.cbegin() ? rem : 0);
-        end_it = end_it > candidates.cend() ? candidates.cend() : end_it;
-        workers.push_back(std::thread(worker, it, end_it, std::ref(num_obstructions), std::ref(start_pos.front())));
-        it = end_it;
-    }
-    assert(workers.size() && workers.size() <= NUM_THREADS);
-
-    for (auto& w : workers) {
-        w.join();
-    }
-    return num_obstructions;
+    return aocutil::parallel_ranged_transform_reduce(NUM_THREADS, candidates.cbegin(), candidates.cend(), int{0}, std::plus{}, valid_obstructions); 
 }
 
 int part_two(const std::vector<std::string>& lines)
