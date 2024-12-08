@@ -491,6 +491,12 @@ public:
     GridIteratorConst cend() const {
         return GridIteratorConst(width(), height() - 1, this);
     }
+    GridIteratorConst begin() const {
+        return GridIteratorConst(0, 0, this);
+    }
+    GridIteratorConst end() const {
+        return GridIteratorConst(width(), height() - 1, this);
+    }
 
 
     GridColIteratorMut begin_col(int col) {
@@ -568,6 +574,23 @@ public:
             ++i; 
         }
         assert(false);
+    }
+
+    void foreach(const std::function<void(const Vec2<int>& pos, const ElemType& elem)>& fn) const {
+        assert(std::ssize(data) == width() * height());
+        for (int idx = 0; idx < std::ssize(data); ++idx) {
+            const Vec2 pos = idx_to_pos(idx);
+            const ElemType& elem = get(pos);
+            fn(pos, elem);
+        }
+    }
+    void foreach(const std::function<void(const Vec2<int>& pos, ElemType& elem)>& fn) {
+        assert(std::ssize(data) == width() * height());
+        for (int idx = 0; idx < std::ssize(data); ++idx) {
+            const Vec2 pos = idx_to_pos(idx);
+            ElemType& elem = get(pos);
+            fn(pos, elem);
+        }
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Grid<ElemType>& g) 
