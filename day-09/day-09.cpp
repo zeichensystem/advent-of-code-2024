@@ -8,10 +8,10 @@
   
     Solutions: 
         - Part 1: 6262891638328 (Example: 1928)
-        - Part 2: 
+        - Part 2: 6287317016845 (Example: 2858)
     Notes:  
         - Part 1: 
-        - Part 2:
+        - Part 2: Phew, this is not pretty. 
 */
 
 
@@ -89,13 +89,12 @@ auto part_one(const std::vector<std::string>& lines)
         }
     }
 
-    const auto sum_of_first_n = [](Int n) -> int {
+    const auto sum_of_first_n = [](Int n) -> Int {
         return n <= 0 ? 0 : n * (n + 1) / 2;
     };
 
     Int result = 0;
     for (const IDRange& range : id_ranges) {
-        // std::cout << range;
         if (range.id == IDRange::ID_FREE) {
             continue;
         }
@@ -106,9 +105,84 @@ auto part_one(const std::vector<std::string>& lines)
     return result;
 }
 
-int part_two(const std::vector<std::string>& lines)
+auto part_two(const std::vector<std::string>& lines)
 {
-    return -1; 
+    std::vector<Int> disk; 
+    std::transform(lines.at(0).cbegin(), lines.at(0).cend(), std::back_inserter(disk), [](char c) -> Int { return aocio::parse_digit(c).value(); });
+   
+    std::set<IDRange> id_ranges;
+    Int range_start = 0;
+    for (Int i = 0; i < std::ssize(disk); ++i) {
+        Int id = i / 2; 
+        id = (i % 2) ? IDRange::ID_FREE : id;
+        IDRange range = {.id = id, .start = range_start, .size = disk.at(i)};
+        if (range.size) {
+            id_ranges.insert(range);
+        }
+        range_start += range.size;
+    }
+
+    const auto find_first_free = [&id_ranges](const auto cbegin) {
+        return std::find_if(cbegin, id_ranges.cend(), [](auto& range) -> bool {return range.id == IDRange::ID_FREE;});
+    };
+
+    std::vector<IDRange> files;
+    std::copy_if(id_ranges.crbegin(), id_ranges.crend(), std::back_inserter(files), [](const auto& range) -> bool {return range.id != IDRange::ID_FREE;});
+
+    for (const IDRange occupied : files) {
+
+        auto free_it = find_first_free(id_ranges.cbegin()); 
+
+        if (free_it == id_ranges.cend() || free_it->start + free_it->size > occupied.start) {
+            break;
+        }
+        
+        while (free_it != id_ranges.cend() && free_it->size < occupied.size) {
+            free_it = find_first_free(std::next(free_it, 1)); 
+        }
+
+        if (free_it == id_ranges.cend() || free_it->start >= occupied.start) { // None was fitting -> leave the block.
+            continue;
+        } 
+
+        const IDRange& free = *free_it;
+        IDRange new_occupied = {.size = 0}, new_free = {.size = 0};
+        assert(occupied.size <= free.size);
+
+       if (occupied.size < free.size) { // Last range will be empty (and the free range will have some space left)
+            new_occupied = {.id = occupied.id, .start = free.start, .size = occupied.size};
+            new_free = {.id = IDRange::ID_FREE, .start = new_occupied.start + new_occupied.size, .size = free.size - occupied.size};
+        } else { // Last range fits exactly into free range.
+            new_occupied = free;
+            new_occupied.id = occupied.id;
+            // new_free = occupied;
+            // new_free.id = IDRange::ID_FREE;
+        }
+
+        id_ranges.erase(free);
+        id_ranges.erase(occupied);
+
+        if (new_free.size) {
+            id_ranges.insert(new_free);
+        }
+        if (new_occupied.size) {
+            id_ranges.insert(new_occupied);
+        }
+    }
+
+    const auto sum_of_first_n = [](Int n) -> Int {
+        return n <= 0 ? 0 : n * (n + 1) / 2;
+    };
+
+    Int result = 0;
+    for (const IDRange& range : id_ranges) {
+        if (range.id == IDRange::ID_FREE) {
+            continue;
+        }
+        Int index_sum = sum_of_first_n(range.start + range.size - 1) - sum_of_first_n(range.start - 1);
+        result += index_sum * range.id;
+    }
+    return result;
 }
 
 int main(int argc, char* argv[])
