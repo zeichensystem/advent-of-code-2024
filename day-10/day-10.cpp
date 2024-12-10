@@ -1,4 +1,3 @@
-#include <queue>
 #include <stack>
 #include "../aoclib/aocio.hpp"
 #include "../aoclib/grid.hpp"
@@ -9,18 +8,19 @@
   
     Solutions: 
         - Part 1: 557 (Example: 36)
-        - Part 2: 
+        - Part 2: 1062 (Example: 81)
     Notes:  
         - Part 1: Simple depth-first search (but if a '9'-destination can be reached in multiple paths from 
-                  one trailhead, make sure to only count them as one since the puzzle description says only the 
-                  longest path matters).
-        - Part 2:
+                  one trailhead, make sure to only count one of them (using the "reached" grid) since the puzzle 
+                  description says only the longest path matters). 
+        - Part 2: Exactly as above, but without the "reached" grid (i.e. we count all possible paths). Kind of 
+                  funny, since that's what I did initally for Part 1 because I thought I had to count all paths :)
 */
 
 using aocutil::Grid; 
 using Vec2 = aocutil::Vec2<int>;
 
-int part_one(const std::vector<std::string>& lines)
+int part_one(const std::vector<std::string>& lines, bool part_two = false)
 {
      Grid<int> height_map; 
      for (const auto& line : lines) {
@@ -59,7 +59,7 @@ int part_one(const std::vector<std::string>& lines)
                 int neighbor_height = height_map.get(adj_pos); 
                 if (neighbor_height == current_height + 1) {
                     if (neighbor_height == 9 && !reached.get(adj_pos)) {
-                        reached.set(adj_pos, true);
+                        reached.set(adj_pos, !part_two); // Only use the "reached" grid for Part 1 (i.e. count all paths for Part 2)
                         ++score;
                     } else {
                         positions.push(adj_pos); 
@@ -74,7 +74,7 @@ int part_one(const std::vector<std::string>& lines)
 
 int part_two(const std::vector<std::string>& lines)
 {
-    return -1; 
+    return part_one(lines, true);
 }
 
 int main(int argc, char* argv[])
