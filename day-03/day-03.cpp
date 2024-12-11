@@ -1,5 +1,5 @@
 #include <numeric>
-#include "../aoclib/aocio.hpp"
+#include "aoclib/aocio.hpp"
 
 /*
     Problem: https://adventofcode.com/2024/day/3

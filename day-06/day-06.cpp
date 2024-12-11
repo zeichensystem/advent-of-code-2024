@@ -1,6 +1,6 @@
-#include "../aoclib/aocio.hpp"
-#include "../aoclib/grid.hpp"
-#include "../aoclib/parallel.hpp"
+#include "aoclib/aocio.hpp"
+#include "aoclib/grid.hpp"
+#include "aoclib/parallel.hpp"
 
 /*
     Problem: https://adventofcode.com/2024/day/6

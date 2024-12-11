@@ -1,8 +1,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <ranges>
-#include "../aoclib/aocio.hpp"
-#include "../aoclib/grid.hpp"
+#include "aoclib/aocio.hpp"
+#include "aoclib/grid.hpp"
 
 /*
     Problem: https://adventofcode.com/2024/day/8
