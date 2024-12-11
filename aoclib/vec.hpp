@@ -9,6 +9,7 @@ namespace aocutil
 template<typename T>
 struct Vec2 
 {
+    typedef T value_type;
     T x, y; 
 
     Vec2 operator+(const Vec2& v) const 

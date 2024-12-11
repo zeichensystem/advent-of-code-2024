@@ -341,6 +341,8 @@ class Grid
     }
 
 public: 
+    typedef ElemType value_type;
+
     Grid() = default; 
 
     Grid(const std::vector<RowType>& rows) 

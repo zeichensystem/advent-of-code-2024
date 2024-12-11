@@ -37,7 +37,7 @@ list(LENGTH TARGETS NUM_TARGETS)
 foreach(current_target IN LISTS TARGETS)
     add_executable(${current_target} ${current_target}/${current_target}.cpp)
     set_target_properties(${current_target} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-    target_include_directories(${current_target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/aoclib/") 
+    target_include_directories(${current_target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/") 
 
     target_compile_options(${current_target} PRIVATE ${WARNING_FLAGS_CXX} $<$<CONFIG:Debug>:${DBG_FLAGS_CXX}>)
     target_link_options(${current_target} PRIVATE ${WARNING_FLAGS_CXX} $<$<CONFIG:Debug>:${DBG_FLAGS_CXX}>)
