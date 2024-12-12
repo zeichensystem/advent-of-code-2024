@@ -7,6 +7,8 @@
 #include <limits>
 #include <cassert>
 #include <optional>
+#include <concepts>
+#include <utility>
 
 #ifndef AOC_DAY_NAME
 #define AOC_DAY_NAME "Undefined AOC_DAY_NAME"
@@ -87,6 +89,27 @@ inline void line_tokenise(const std::string& line, const std::string& delims, co
 
         start_pos = token_end_pos + 1;
     }
+}
+
+template<class ConversionFn>
+inline auto line_tokenise(const std::string& line, const std::string& delims, const std::string& preserved_delims, ConversionFn conversion_fn = std::function<void(void)>{}) -> std::vector<decltype(conversion_fn(""))>
+requires std::invocable<ConversionFn&, const std::string&> || std::invocable<ConversionFn&, std::string_view>
+{
+    std::vector<std::string> tokens;
+    line_tokenise(line, delims, preserved_delims, tokens);
+    std::vector<decltype(conversion_fn(""))> result; 
+    std::transform(tokens.cbegin(), tokens.cend(), std::back_inserter(result), conversion_fn);
+    return result;
+}
+
+// No conversion.
+template<class ConversionFn>
+inline auto line_tokenise(const std::string& line, const std::string& delims, const std::string& preserved_delims, ConversionFn conversion_fn) -> std::vector<std::string>
+requires std::invocable<ConversionFn&, void> 
+{
+    std::vector<std::string> tokens;
+    line_tokenise(line, delims, preserved_delims, tokens);
+    return tokens;
 }
 
 static inline std::string str_without_whitespace(std::string_view str) 
