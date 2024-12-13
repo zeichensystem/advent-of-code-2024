@@ -1,17 +1,18 @@
 #include <numeric>
-#include <optional>
 #include <limits>
+#include <unordered_map>
 #include "aoclib/aocio.hpp"
+#include "aoclib/hash.hpp"
 
 /*
     Problem: https://adventofcode.com/2024/day/11
   
     Solutions: 
-        - Part 1: 172484 (Example: 55312)
-        - Part 2: 
+        - Part 1:          172484 (Example:          55312)
+        - Part 2: 205913561055242 (Example: 65601038650482)
     Notes:  
-        - Part 1: 
-        - Part 2:
+        - Part 1: Dumb solution without caching for Part 1 ('apply_rules()')
+        - Part 2: Smarter solution with caching for Part 2 ('len_after_blinks()')
 */
 
 int log10_i64(int64_t n)
@@ -70,15 +71,58 @@ std::vector<int64_t> apply_rules(const std::vector<int64_t>& input, int num_blin
     return out;
 }
 
+template <>
+struct std::hash<std::pair<int64_t, int>>
+{
+  std::size_t operator()(const std::pair<int64_t, int>& pair) const 
+  {
+    std::size_t hash = 0; 
+    aocutil::hash_combine(hash, pair.first);
+    aocutil::hash_combine(hash, pair.second);
+    return hash;
+  }
+};
+
+int64_t len_after_blinks(int64_t stone, int num_blinks, std::unordered_map<std::pair<int64_t, int>, int64_t>& cache)
+{
+    if (num_blinks == 0) {
+        return 1;
+    }
+
+    if (cache.contains(std::make_pair(stone, num_blinks))) {
+        return cache.at(std::make_pair(stone, num_blinks));
+    }
+
+    if (stone == 0) {
+        return len_after_blinks(1, num_blinks - 1, cache); 
+    } else if (const int n_digits = log10_i64(stone) + 1; n_digits % 2 == 0) {
+        int div = pow10_i64(n_digits / 2); 
+        int stone_left = stone / div; 
+        int stone_right = stone % div;
+        int64_t result = len_after_blinks(stone_left, num_blinks - 1, cache) + len_after_blinks(stone_right, num_blinks - 1, cache);
+        cache.insert({std::make_pair(stone, num_blinks), result});
+        return result;
+    } else {
+        int64_t result = len_after_blinks(stone * 2024, num_blinks - 1, cache);
+        cache.insert({std::make_pair(stone, num_blinks), result});
+        return result;
+    }
+}
+
 int64_t part_one(const std::vector<std::string>& lines)
 {   
     const std::vector<int64_t> stones = aocio::line_tokenise(lines.at(0), " ", "", [](const std::string& s) -> int64_t { return aocio::parse_num_i64(s).value(); });
     return apply_rules(stones, 25).size();
 }
 
-int part_two(const std::vector<std::string>& lines)
+int64_t part_two(const std::vector<std::string>& lines)
 {
-    return -1; 
+    const std::vector<int64_t> stones = aocio::line_tokenise(lines.at(0), " ", "", [](const std::string& s) -> int64_t { return aocio::parse_num_i64(s).value(); });
+    std::unordered_map<std::pair<int64_t, int>, int64_t> cache; // {stone_x, num_blinks_y} -> len_after_blinks(stone_x, num_blinks_y)
+
+    return std::transform_reduce(stones.cbegin(), stones.cend(), int64_t{0}, std::plus{}, [&cache](int64_t stone) {
+        return len_after_blinks(stone, 75, cache);
+    });
 }
 
 int main(int argc, char* argv[])
