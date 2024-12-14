@@ -22,6 +22,11 @@ struct Vec2
         return Vec2{.x = x - v.x, .y = y - v.y};
     }
 
+    Vec2 operator-() const 
+    {
+        return Vec2{.x = -x, .y = -y};
+    }
+
     Vec2 operator*(const T& scalar) const 
     {
         return Vec2{.x = x * scalar, .y = y * scalar};
@@ -35,9 +40,7 @@ struct Vec2
     bool operator==(const Vec2& v) const = default;
 };
 
-
-
-enum class Direction {Up, Right, Down, Left};
+enum class Direction {Up, Right, Down, Left, None};
 
 template <typename T, bool up_is_positive = false>
 constexpr std::array<Vec2<T>, 4> all_dirs_vec2() 
@@ -87,6 +90,22 @@ constexpr Vec2<T> dir_to_vec2(Direction dir)
         throw std::invalid_argument("dir_to_vec2: Invalid direction");
         break;
     }
+}
+
+template <typename T, bool up_is_positive = false>
+constexpr Direction vec2_to_dir(const Vec2<T>& vec) 
+{
+    if (vec.y > 0 && vec.x == 0) {
+        return up_is_positive ? Direction::Up : Direction::Down;
+    } else if (vec.y < 0 && vec.x == 0) {
+        return up_is_positive ? Direction::Down : Direction::Up;
+    }
+
+    if (vec.x != 0 && vec.y == 0) {
+        return vec.x > 0 ? Direction::Right : Direction::Left;
+    } 
+
+    return Direction::None;
 }
 
 constexpr std::pair<Direction, Direction> dir_get_left_right(Direction dir)
