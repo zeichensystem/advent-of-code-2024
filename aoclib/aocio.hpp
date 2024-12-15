@@ -91,8 +91,8 @@ inline void line_tokenise(const std::string& line, const std::string& delims, co
     }
 }
 
-template<class ConversionFn>
-inline auto line_tokenise(const std::string& line, const std::string& delims, const std::string& preserved_delims, ConversionFn conversion_fn = std::function<void(void)>{}) -> std::vector<decltype(conversion_fn(""))>
+template<class ConversionFn = std::function<std::string(void)>>
+inline auto line_tokenise(const std::string& line, const std::string& delims, const std::string& preserved_delims, ConversionFn conversion_fn = []() {return std::string{""};}) -> std::vector<decltype(ConversionFn(""))>
 requires std::invocable<ConversionFn&, const std::string&> || std::invocable<ConversionFn&, std::string_view>
 {
     std::vector<std::string> tokens;
@@ -102,10 +102,9 @@ requires std::invocable<ConversionFn&, const std::string&> || std::invocable<Con
     return result;
 }
 
-// No conversion.
-template<class ConversionFn>
-inline auto line_tokenise(const std::string& line, const std::string& delims, const std::string& preserved_delims, ConversionFn conversion_fn) -> std::vector<std::string>
-requires std::invocable<ConversionFn&, void> 
+template<class ConversionFn = std::function<std::string(void)>>
+inline auto line_tokenise(const std::string& line, const std::string& delims, const std::string& preserved_delims, ConversionFn conversion_fn = []() {return std::string{""};}) -> std::vector<std::string>
+requires std::invocable<ConversionFn&>
 {
     std::vector<std::string> tokens;
     line_tokenise(line, delims, preserved_delims, tokens);
@@ -146,20 +145,44 @@ inline std::string& str_make_upper(std::string& s) { // In-place variant; cf. se
     return s;
 }
 
-static inline std::optional<int> parse_num(const std::string &str)
+static inline std::optional<int> parse_num(const std::string &str, bool strict = false)
 {
     size_t num_read = 0; 
-    int n = std::stoi(str, &num_read); 
+    int n; 
+    try {
+        n = std::stoi(str, &num_read); 
+    } catch (const std::invalid_argument& err) {
+        return {};
+    } catch (const std::out_of_range& err) {
+        std::cerr << "parse_num: the converted value would fall out of the range of int";
+        return {};
+    }
+    
+    if (strict && num_read != str.size()) {
+        return {};
+    }
     if (num_read == 0) {
         return {};
     }
     return n; 
 } 
 
-static inline std::optional<int64_t> parse_num_i64(const std::string& str)
+static inline std::optional<int64_t> parse_num_i64(const std::string& str, bool strict = false)
 {
     size_t num_read = 0; 
-    int64_t n = std::stoll(str, &num_read); 
+    int64_t n; 
+    try {
+        n = std::stoll(str, &num_read); 
+    } catch (const std::invalid_argument& err) {
+        return {};
+    } catch (const std::out_of_range& err) {
+        std::cerr << "parse_num_i64: the converted value would fall out of the range of int64_t";
+        return {};
+    }
+    
+    if (strict && num_read != str.size()) {
+        return {};
+    }
     if (num_read == 0) {
         return {};
     }
@@ -329,5 +352,205 @@ inline IOStatus handle_input(int argc, char* argv[], std::vector<std::string>& l
     assert(!iostat_has_flag(result, IOStatus::INPUT_HELP));
     return result | IOStatus::INPUT_SUCCESS;
 }
+
+class RDParser 
+{
+    // Recursive descent parser (kinda), cf. https://en.wikipedia.org/wiki/Recursive_descent_parser (last retrieved 2024-12-15)
+    const std::vector<std::string>& lines;
+    const std::string tokenize_delims; 
+    const std::string preserved_delims;
+
+    std::size_t line = 0; 
+    std::string::size_type col = 0;
+    std::string_view _current_token = EMPTY;
+    bool _is_end = false, _is_new_line = true;
+
+    void advance_to_newline() 
+    {
+        ++line;
+        col = 0; 
+    }
+
+    void handle_eol() 
+    {
+        if (preserve_newlines) {
+            _current_token = NEWLINE;
+            advance_to_newline();
+        } else {
+            advance_to_newline();
+            next_token();
+        }
+    }
+
+    public:
+    bool preserve_newlines;
+    static inline const std::string NEWLINE = "\n";
+    static inline const std::string EMPTY = "";
+    
+    RDParser(const std::vector<std::string>& lines, const std::string& tokenize_delims = " \t", const std::string& preserved_delims = "", bool preserve_newlines = true) :lines{lines}, tokenize_delims{tokenize_delims}, preserved_delims{preserved_delims}, preserve_newlines{preserve_newlines}
+    {
+        for (char preserved : preserved_delims) {
+            if (tokenize_delims.find(preserved) == std::string::npos) {
+                throw std::invalid_argument("RDParser::RDParser: preserved delim not in delims.");
+            }
+        }
+
+        if (lines.size() == 0) {
+            _is_end = true;
+        }
+
+        next_token();
+    }
+
+    void next_token() 
+    {
+        assert(line <= lines.size());
+
+        _is_new_line = (col == 0);
+
+        if (_is_end || line == lines.size()) {
+            _is_end = true;
+            _current_token = EMPTY;
+            return;
+        }
+
+        if (col >= lines.at(line).size()) { // Reached end of line. 
+            return handle_eol();
+        } 
+  
+        std::string::size_type start_col = lines.at(line).find_first_not_of(tokenize_delims, col); 
+
+        if (preserved_delims.size()) {
+            std::string::size_type preserved_delim_idx = lines.at(line).find_first_of(preserved_delims, col); 
+            if (preserved_delim_idx < start_col) {
+                _current_token = std::string_view{lines.at(line)}.substr(preserved_delim_idx, 1);
+                col = preserved_delim_idx + 1;
+                return;
+            }
+        }
+
+        if (start_col == std::string::npos) { // Reached end of line.
+            return handle_eol();
+        } 
+        
+        std::string::size_type end_col = lines.at(line).find_first_of(tokenize_delims, start_col);
+        if (preserved_delims.size()) {
+            std::string::size_type preserved_delim_idx = lines.at(line).find_first_of(preserved_delims, start_col);
+            if (preserved_delim_idx < end_col) {
+                end_col = preserved_delim_idx;
+            }
+        }
+
+        assert(end_col > start_col);
+        _current_token = std::string_view{lines.at(line)}.substr(start_col, end_col - start_col);
+        assert(_current_token != "");
+        col = end_col != std::string::npos ? end_col : lines.at(line).size();
+    }
+
+    bool accept_token(std::string_view sym) 
+    {
+        if (_current_token == sym) {
+            next_token();
+            return true;
+        } 
+        return false;
+    }
+
+    bool require_token(std::string_view sym)
+    {
+        if (accept_token(sym)) {
+            return true;
+        } else {
+            const std::string offending_line = line < lines.size() ? lines.at(line) : "";
+            const std::string info = "on line " + std::to_string(line + 1) + " (col " + std::to_string(col - current_token().size()) + "):\n'" + offending_line + "'";
+            throw std::runtime_error("Parser::require_token: Required token\n'" + std::string{sym} + "'\ndoes not match actual token\n'" + std::string{current_token()} + "'\n" + info);
+        }
+    }
+
+    bool require_one_of_tokens(std::initializer_list<std::string_view> syms)
+    {
+        for (const auto& sym : syms) {
+            if (accept_token(sym)) {
+                return true;
+            }
+        }
+        const std::string offending_line = line < lines.size() ? lines.at(line) : "";
+        const std::string info = "on line " + std::to_string(line + 1) + " (col " + std::to_string(col - current_token().size()) + "):\n'" + offending_line + "'";
+        throw std::runtime_error("Parser::require_one_of_tokens: Required tokens do not match actual token\n'" + std::string{current_token()} + "'\n" + info);
+    }
+
+    std::optional<int> accept_int()
+    {
+        const auto num = aocio::parse_num(std::string{_current_token}, true); 
+        if (num.has_value()) {
+            next_token();
+        }
+        return num;
+    }
+    std::optional<int64_t> accept_int64()
+    {
+        const auto num = aocio::parse_num_i64(std::string{_current_token}, true); 
+        if (num.has_value()) {
+            next_token();
+        }
+        return num;
+    }
+
+    int require_int()
+    {
+        const auto num = aocio::parse_num(std::string{_current_token}, true); 
+        if (num.has_value()) {
+            next_token();
+            return num.value();
+        }
+        const std::string offending_line = line < lines.size() ? lines.at(line) : "";
+        const std::string info = "on line " + std::to_string(line + 1) + " (col " + std::to_string(col - current_token().size()) + "):\n'" + offending_line + "'";
+        throw std::runtime_error("Parser::require_int: Required int token does not match actual token\n'" + std::string{current_token()} + "'\n" + info);
+
+    }
+    int64_t require_int64()
+    {
+        const auto num = aocio::parse_num_i64(std::string{_current_token}, true); 
+        if (num.has_value()) {
+            next_token();
+            return num.value();
+        }
+        const std::string offending_line = line < lines.size() ? lines.at(line) : "";
+        const std::string info = "on line " + std::to_string(line + 1) + " (col " + std::to_string(col - current_token().size()) + "):\n'" + offending_line + "'";
+        throw std::runtime_error("Parser::require_int64: Required int64 token does not match actual token\n'" + std::string{current_token()} + "'\n" + info);
+    }
+
+    bool accept_newline() 
+    {
+        if (_current_token == NEWLINE) {
+            next_token();
+            return true;
+        } 
+        return false;
+    }
+
+    bool require_newline()
+    {
+        if (accept_token(NEWLINE)) {
+            return true;
+        } else {
+            const std::string offending_line = line < lines.size() ? lines.at(line) : "";
+            const std::string info = "on line " + std::to_string(line + 1) + " (col " + std::to_string(col - current_token().size()) + "):\n'" + offending_line + "'";
+            throw std::runtime_error("Parser::require_newline: Required token\n'" + std::string{NEWLINE} + "'\ndoes not match actual token\n'" + std::string{current_token()} + "'\n" + info);
+        }
+    }
+    
+    std::string_view current_token() const
+    {
+        return _current_token;
+    }
+
+    bool is_end() const {
+        return _is_end;
+    }
+    bool is_newline() const {
+        return _is_new_line;
+    }
+};
 
 }
