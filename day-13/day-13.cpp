@@ -1,20 +1,20 @@
-#include <unordered_map>
+#include "matrix.hpp"
 #include "aoclib/aocio.hpp"
 #include "aoclib/vec.hpp"
-
 
 /*
     Problem: https://adventofcode.com/2024/day/13
   
     Solutions: 
-        - Part 1: 
-        - Part 2: 
+        - Part 1:           26299 (Example:          480)
+        - Part 2: 107824497933339 (Example: 875318608908)
     Notes:  
-        - Part 1: 
-        - Part 2:
+        - Part 1: - Wrote a recursive-descent parser as an exercise.
+                  - Implemented a reduced_row_echelon function in matrix.hpp to solve linear equation systems
+        - Part 2: - I'm glad I did not run into floating point accuracy issues with double...
 */
 
-using Vec2 = aocutil::Vec2<int>;
+using Vec2 = aocutil::Vec2<int64_t>;
 
 struct ClawMachine 
 {
@@ -50,10 +50,11 @@ class ClawMachineParser : public aocio::RDParser
         }
         return result;
     }
+
     private:
     Vec2 require_coords()
     {
-        std::optional<int> x, y;
+        std::optional<Vec2::value_type> x, y;
         for (int i = 0; i < 2; ++i) {
             std::string_view x_y = current_token();
             if (x_y == "X" && x.has_value()) {
@@ -62,16 +63,14 @@ class ClawMachineParser : public aocio::RDParser
                 throw std::runtime_error("Parser::button_coord: y-coordinate already defined.");
             }
             require_one_of_tokens({"X", "Y"});
-
             accept_token("=");
-
-            int sign = 1;
+            Vec2::value_type sign = 1;
             if (accept_token("+")) {
                 sign = 1;
             } else if (accept_token("-")) {
                 sign = -1;
             }
-            int num = require_int();
+            Vec2::value_type num = require_int<Vec2::value_type>();
             if (x_y == "X") {
                 x = num * sign;
             } else {
@@ -79,8 +78,7 @@ class ClawMachineParser : public aocio::RDParser
             }
             if (i == 0) {
                 require_token(",");
-            }
-            
+            } 
         }
         return Vec2{x.value(), y.value()};
     }
@@ -101,7 +99,6 @@ class ClawMachineParser : public aocio::RDParser
         Vec2& btn = a_b == "A" ? cm.delta_btn_a : cm.delta_btn_b;
         require_token(":");
         btn = require_coords();
-
         return a_b;
     }
 
@@ -118,7 +115,6 @@ class ClawMachineParser : public aocio::RDParser
         std::string_view btn_name_read = "";
         bool price_read = false;
         int btns_read = 0;
-
         for (int i = 0; i < 3; ++i) {
             if (const auto btn_name = accept_button(cm, btn_name_read); btn_name.has_value()) { // Button.
                 if (btn_name.value() == btn_name_read) {
@@ -134,35 +130,47 @@ class ClawMachineParser : public aocio::RDParser
             }
             accept_newline();
         }
-
         if (btns_read < 2) {
             throw std::runtime_error("Parser::claw_machine: Missing buttons.");
         } else if (btns_read > 2) {
             throw std::runtime_error("Parser::claw_machine: Too many buttons.");
         }
-
         if (!price_read) {
             throw std::runtime_error("Parser::claw_machine: No price.");
         }
-
         return cm;
     }
 };
 
-int part_one(const std::vector<std::string>& lines)
+Vec2::value_type part_one(const std::vector<std::string>& lines, bool part_two = false)
 {
     ClawMachineParser parser(lines);
     std::vector<ClawMachine> machines = parser.parse();
 
-    for (const auto& m : machines) {
-        std::cout << m << "\n";
-    }
-    return -1;
+    // Approach: Solve the following linear system of equations (if possible) and only consider integer solutions
+    // (1) delta_btn_a.x * a + delta_btn_b.x * b = prize_location.x
+    // (2) delta_btn_a.y * a + delta_btn_b.y * b = prize_location.y
+
+    return std::transform_reduce(machines.cbegin(), machines.cend(), Vec2::value_type{0}, std::plus{}, [part_two](const ClawMachine& cm) -> Vec2::value_type {
+        const Vec2 prize_location = !part_two ? cm.prize_location : cm.prize_location + Vec2{10000000000000, 10000000000000};
+        Matrix<double, 2, 3> mat(cm.delta_btn_a, cm.delta_btn_b, prize_location);
+        if (mat.reduced_row_echelon()) { // Has a solution.
+            Vec2::value_type a = std::round(mat.at(0, 2));
+            Vec2::value_type b = std::round(mat.at(1, 2));
+            if (std::round(mat.at(1, 1)) == 0) { // Infinite solutions (we are only interested in the lowest, i.e. we pick b = 0)
+                assert(b == 0);
+            } 
+            if (a * cm.delta_btn_a + b * cm.delta_btn_b == prize_location) { // Has an integer solution.
+                return cm.cost_btn_a * a + cm.cost_btn_b * b;
+            } 
+        } 
+        return 0; // No solution (or no integer solution).
+    });
 }
 
-int part_two(const std::vector<std::string>& lines)
+auto part_two(const std::vector<std::string>& lines)
 {
-    return -1; 
+    return part_one(lines, true);
 }
 
 int main(int argc, char* argv[])

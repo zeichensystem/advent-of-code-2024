@@ -479,7 +479,9 @@ class RDParser
         throw std::runtime_error("Parser::require_one_of_tokens: Required tokens do not match actual token\n'" + std::string{current_token()} + "'\n" + info);
     }
 
-    std::optional<int> accept_int()
+    template<class IntT> std::optional<IntT> accept_int(); 
+    template<>
+    std::optional<int> accept_int<int>()
     {
         const auto num = aocio::parse_num(std::string{_current_token}, true); 
         if (num.has_value()) {
@@ -487,7 +489,8 @@ class RDParser
         }
         return num;
     }
-    std::optional<int64_t> accept_int64()
+    template<>
+    std::optional<int64_t> accept_int<int64_t>()
     {
         const auto num = aocio::parse_num_i64(std::string{_current_token}, true); 
         if (num.has_value()) {
@@ -496,7 +499,9 @@ class RDParser
         return num;
     }
 
-    int require_int()
+    template<class IntT> IntT require_int();
+    template<>
+    int require_int<int>()
     {
         const auto num = aocio::parse_num(std::string{_current_token}, true); 
         if (num.has_value()) {
@@ -506,9 +511,9 @@ class RDParser
         const std::string offending_line = line < lines.size() ? lines.at(line) : "";
         const std::string info = "on line " + std::to_string(line + 1) + " (col " + std::to_string(col - current_token().size()) + "):\n'" + offending_line + "'";
         throw std::runtime_error("Parser::require_int: Required int token does not match actual token\n'" + std::string{current_token()} + "'\n" + info);
-
     }
-    int64_t require_int64()
+    template<>
+    int64_t require_int<int64_t>()
     {
         const auto num = aocio::parse_num_i64(std::string{_current_token}, true); 
         if (num.has_value()) {
@@ -517,7 +522,7 @@ class RDParser
         }
         const std::string offending_line = line < lines.size() ? lines.at(line) : "";
         const std::string info = "on line " + std::to_string(line + 1) + " (col " + std::to_string(col - current_token().size()) + "):\n'" + offending_line + "'";
-        throw std::runtime_error("Parser::require_int64: Required int64 token does not match actual token\n'" + std::string{current_token()} + "'\n" + info);
+        throw std::runtime_error("Parser::require_int: Required int token does not match actual token\n'" + std::string{current_token()} + "'\n" + info);
     }
 
     bool accept_newline() 
