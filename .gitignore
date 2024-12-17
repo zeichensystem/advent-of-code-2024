@@ -4,3 +4,4 @@ build/
 .vscode/
 **/.DS_Store
 result.txt
+session.txt
