@@ -5,6 +5,9 @@
 #include <numeric>
 #include <iostream>
 
+namespace aocutil 
+{
+    
 template<class T = double, int Rows = 0, int Cols = 0>
 requires(Rows != 0 && Cols != 0)
 struct Matrix 
@@ -225,3 +228,5 @@ struct Matrix
         return os;
     }
 };
+
+}

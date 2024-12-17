@@ -363,7 +363,7 @@ class RDParser
     std::size_t line = 0; 
     std::string::size_type col = 0;
     std::string_view _current_token = EMPTY;
-    bool _is_end = false, _is_new_line = true;
+    bool _is_end = false, _is_new_line = false;
 
     void advance_to_newline() 
     {
@@ -399,6 +399,15 @@ class RDParser
             _is_end = true;
         }
 
+        next_token();
+    }
+
+    void reset()
+    {
+        line = 0; 
+        col = 0;
+        _current_token = EMPTY;
+        _is_end = lines.size() == 0;
         next_token();
     }
 
@@ -544,10 +553,15 @@ class RDParser
             throw std::runtime_error("Parser::require_newline: Required token\n'" + std::string{NEWLINE} + "'\ndoes not match actual token\n'" + std::string{current_token()} + "'\n" + info);
         }
     }
-    
+
     std::string_view current_token() const
     {
         return _current_token;
+    }
+
+    std::string_view peek() const
+    {
+        return current_token();
     }
 
     bool is_end() const {
