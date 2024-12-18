@@ -1,3 +1,6 @@
+#include <unordered_map>
+#include <unordered_set>
+#include "aoclib/grid.hpp"
 #include "aoclib/aocio.hpp"
 #include "aoclib/vec.hpp"
 
@@ -6,10 +9,14 @@
   
     Solutions: 
         - Part 1: 231019008 (Example with grid = {11, 7}: 12)
-        - Part 2: 
-    Notes:  
+        - Part 2: 8280
+
+    Notes:
         - Part 1: 
-        - Part 2:
+        - Part 2: Well that was unexpected. I assumed the chrismas tree had to be symmetric and 
+                  basically filling the whole grid, but that was not the case. Simple "heuristic" (if
+                  you can call it even that) is checking for a relatively long (HEURISTIC_ROW_LENGTH) 
+                  consecutive row of robots. I cheated by looking for hints online for that one :<  
 */
 
 using Vec2 = aocutil::Vec2<int>;
@@ -80,20 +87,10 @@ Vec2 simulate_robot(const Robot& bot, const Vec2& grid, int seconds)
 
 }
 
-int part_one(const std::vector<std::string>& lines)
+std::array<int, 4> quadrant_counts(const std::vector<Vec2>& positions, const Vec2& grid)
 {
-    constexpr int elapsed_seconds = 100; 
-    constexpr Vec2 grid = {101, 103}; // Example: {11, 7}
-
-    std::vector<Robot> robots = RobotParser(lines).parse();
-
-    std::vector<Vec2> end_positions;
-    std::transform(robots.cbegin(), robots.cend(), std::back_inserter(end_positions), [grid](const Robot& bot) {
-        return simulate_robot(bot, grid, elapsed_seconds);
-    });
-
-    std::array<int, 4> quadrant_cnt = {0,0,0,0};
-    for (const Vec2& pos: end_positions) {
+    std::array<int, 4> quadrant_cnt = {0, 0, 0, 0};
+    for (const Vec2& pos: positions) {
         if (pos.x < grid.x / 2) { // Left
             if (pos.y < grid.y / 2) { // Left-Top
                 quadrant_cnt.at(0) += 1;
@@ -109,17 +106,69 @@ int part_one(const std::vector<std::string>& lines)
             }
         } 
     }
+    return quadrant_cnt;
+}
+
+int part_one(const std::vector<std::string>& lines)
+{
+    constexpr int elapsed_seconds = 100; 
+    constexpr Vec2 grid = {101, 103}; // Example: {11, 7}
+    std::vector<Robot> robots = RobotParser(lines).parse();
+    std::vector<Vec2> end_positions;
+    std::transform(robots.cbegin(), robots.cend(), std::back_inserter(end_positions), [grid](const Robot& bot) {
+        return simulate_robot(bot, grid, elapsed_seconds);
+    });
     
     int safety_factor = 1; 
-    for (int cnt : quadrant_cnt) {
+    for (int cnt : quadrant_counts(end_positions, grid)) {
         safety_factor *= cnt;
     }
     return safety_factor;
 }
 
+void print_grid(const Vec2& grid, const std::vector<Vec2>& positions)
+{
+    aocutil::Grid<char> map(grid.x, grid.y, '.');
+    for (const Vec2& pos: positions) {
+        map.at(pos) = 'x'; 
+    }
+    std::cout << map << "\n";
+}
+
 int part_two(const std::vector<std::string>& lines)
 {
-    return -1; 
+    constexpr int HEURISTIC_ROW_LENGTH = 16;
+    constexpr Vec2 grid = {101, 103}; // Example: {11, 7}, Real: {101, 103}
+    std::vector<Robot> robots = RobotParser(lines).parse();
+
+    for (int elapsed_seconds = 0; ; ++elapsed_seconds) {
+        std::vector<Vec2> positions;
+        std::transform(robots.cbegin(), robots.cend(), std::back_inserter(positions), [grid, elapsed_seconds](const Robot& bot) {
+            return simulate_robot(bot, grid, elapsed_seconds);
+        }); 
+
+        aocutil::Grid<char> map(grid.x, grid.y, '.');
+        for (const Vec2& pos: positions) {
+            map.at(pos) = 'x'; 
+        }       
+
+        for (int y = 0; y < map.height(); ++y) {
+            int consecutive = 0, max_consecutive = 0;
+            for (int x = 1; x < map.width(); ++x) {
+                if (map.at(x, y) == 'x' && map.at(x - 1, y) == 'x') {
+                    ++consecutive;
+                } else {
+                    max_consecutive = std::max(max_consecutive, consecutive);
+                    consecutive = 0;
+                }
+            }
+            if (max_consecutive >= HEURISTIC_ROW_LENGTH) {
+                print_grid(grid, positions);
+                return elapsed_seconds;
+            }    
+        } 
+    }
+    return 0;
 }
 
 int main(int argc, char* argv[])
