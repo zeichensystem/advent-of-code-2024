@@ -32,6 +32,16 @@ struct Vec2
         return Vec2{.x = x * scalar, .y = y * scalar};
     }
 
+    Vec2 perp_dot(bool counterclockwise = true) const
+    {
+        // cos(90) -sin(90)  x
+        // sin(90)  cos(90)  y
+        // <=>
+        //  0  -1  x
+        //  1   0  y
+        return counterclockwise ? Vec2{-y, x} : Vec2{y, -x}; 
+    }
+
     friend Vec2 operator*(const T& scalar, const Vec2& v) 
     {
         return Vec2{.x = scalar * v.x, .y = scalar * v.y};
