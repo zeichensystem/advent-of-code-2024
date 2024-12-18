@@ -42,9 +42,9 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     if len(str(day_n)) == 1:
-        day_str = 'day-0{day_n}'
+        day_str = f'day-0{day_n}'
     else:
-        day_str = 'day-{day_n}'
+        day_str = f'day-{day_n}'
 
     if os.path.exists(os.path.join("input", f'{day_str}.txt')):
         print(f'Day {day_n} is already ready to solve. Done.')
@@ -77,4 +77,4 @@ if __name__ == "__main__":
     if not os.path.exists(code_outfile):
         shutil.copyfile('day-xy/day-xy.cpp', code_outfile)
     
-    print('Done. Have fun solving day {day_n} :)')
+    print(f'Done. Have fun solving day {day_n} :)')

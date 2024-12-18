@@ -1,5 +1,3 @@
-#include <unordered_map>
-#include <unordered_set>
 #include "aoclib/grid.hpp"
 #include "aoclib/aocio.hpp"
 #include "aoclib/vec.hpp"
@@ -13,8 +11,8 @@
 
     Notes:
         - Part 1: 
-        - Part 2: Well that was unexpected. I assumed the chrismas tree had to be symmetric and 
-                  basically filling the whole grid, but that was not the case. Simple "heuristic" (if
+        - Part 2: Well that was unexpected. I assumed the christmas tree had to be symmetric and 
+                  basically filling the whole grid, but that was obviously not the case. Simple "heuristic" (if
                   you can call it even that) is checking for a relatively long (HEURISTIC_ROW_LENGTH) 
                   consecutive row of robots. I cheated by looking for hints online for that one :<  
 */
@@ -84,7 +82,6 @@ Vec2 simulate_robot(const Robot& bot, const Vec2& grid, int seconds)
         new_pos.y += grid.y;
     }
     return new_pos;
-
 }
 
 std::array<int, 4> quadrant_counts(const std::vector<Vec2>& positions, const Vec2& grid)
