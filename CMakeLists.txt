@@ -30,7 +30,7 @@ if (ipo_available AND (NOT CMAKE_BUILD_TYPE MATCHES Debug) AND (NOT CMAKE_BUILD_
     message("-- IPO enabled")
 endif()
 
-set(TARGETS day-01 day-02 day-03 day-04 day-05 day-06 day-07 day-08 day-09 day-10 day-11 day-12 day-13 day-14 day-16) # Add the other days as you please.
+set(TARGETS day-01 day-02 day-03 day-04 day-05 day-06 day-07 day-08 day-09 day-10 day-11 day-12 day-13 day-14 day-16 day-17) # Add the other days as you please.
 
 list(LENGTH TARGETS NUM_TARGETS)
 

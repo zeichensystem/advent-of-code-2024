@@ -476,11 +476,11 @@ class RDParser
         }
     }
 
-    bool require_one_of_tokens(std::initializer_list<std::string_view> syms)
+    std::string require_one_of_tokens(std::initializer_list<std::string_view> syms)
     {
         for (const auto& sym : syms) {
             if (accept_token(sym)) {
-                return true;
+                return std::string{sym};
             }
         }
         const std::string offending_line = line < lines.size() ? lines.at(line) : "";
