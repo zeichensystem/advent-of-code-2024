@@ -189,6 +189,28 @@ static inline std::optional<int64_t> parse_num_i64(const std::string& str, bool 
     return n; 
 } 
 
+static inline std::optional<uint64_t> parse_num_u64(const std::string& str, bool strict = false)
+{
+    size_t num_read = 0; 
+    uint64_t n; 
+    try {
+        n = std::stoull(str, &num_read); 
+    } catch (const std::invalid_argument& err) {
+        return {};
+    } catch (const std::out_of_range& err) {
+        std::cerr << "parse_num_u64: the converted value would fall out of the range of uint64_t";
+        return {};
+    }
+    
+    if (strict && num_read != str.size()) {
+        return {};
+    }
+    if (num_read == 0) {
+        return {};
+    }
+    return n; 
+} 
+
 static inline std::optional<int> parse_digit(char c)
 {
     int digit = static_cast<int>(c) - '0'; 
@@ -507,6 +529,15 @@ class RDParser
         }
         return num;
     }
+    template<>
+    std::optional<uint64_t> accept_int<uint64_t>()
+    {
+        const auto num = aocio::parse_num_u64(std::string{_current_token}, true); 
+        if (num.has_value()) {
+            next_token();
+        }
+        return num;
+    }
 
     template<class IntT> IntT require_int();
     template<>
@@ -525,6 +556,18 @@ class RDParser
     int64_t require_int<int64_t>()
     {
         const auto num = aocio::parse_num_i64(std::string{_current_token}, true); 
+        if (num.has_value()) {
+            next_token();
+            return num.value();
+        }
+        const std::string offending_line = line < lines.size() ? lines.at(line) : "";
+        const std::string info = "on line " + std::to_string(line + 1) + " (col " + std::to_string(col - current_token().size()) + "):\n'" + offending_line + "'";
+        throw std::runtime_error("Parser::require_int: Required int token does not match actual token\n'" + std::string{current_token()} + "'\n" + info);
+    }
+    template<>
+    uint64_t require_int<uint64_t>()
+    {
+        const auto num = aocio::parse_num_u64(std::string{_current_token}, true); 
         if (num.has_value()) {
             next_token();
             return num.value();
