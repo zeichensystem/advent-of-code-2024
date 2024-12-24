@@ -7,6 +7,7 @@
 #include <limits>
 #include <cassert>
 #include <optional>
+#include <functional>
 #include <concepts>
 #include <utility>
 
@@ -17,7 +18,7 @@
 namespace aocio 
 {
 
-inline bool file_getlines(std::string_view fname, std::vector<std::string>& lines)
+inline bool file_getlines(const std::string& fname, std::vector<std::string>& lines)
 {
     std::ifstream file {fname};
     if (!file) {
@@ -154,7 +155,7 @@ static inline std::optional<int> parse_num(const std::string &str, bool strict =
     } catch (const std::invalid_argument& err) {
         return {};
     } catch (const std::out_of_range& err) {
-        std::cerr << "parse_num: the converted value would fall out of the range of int";
+        std::cerr << "parse_num: The converted value would fall out of the range of int" << "(" << err.what() << ")";
         return {};
     }
     
@@ -176,7 +177,7 @@ static inline std::optional<int64_t> parse_num_i64(const std::string& str, bool 
     } catch (const std::invalid_argument& err) {
         return {};
     } catch (const std::out_of_range& err) {
-        std::cerr << "parse_num_i64: the converted value would fall out of the range of int64_t";
+        std::cerr << "parse_num_i64: the converted value would fall out of the range of int64_t" << "(" << err.what() << ")";
         return {};
     }
     
@@ -198,7 +199,7 @@ static inline std::optional<uint64_t> parse_num_u64(const std::string& str, bool
     } catch (const std::invalid_argument& err) {
         return {};
     } catch (const std::out_of_range& err) {
-        std::cerr << "parse_num_u64: the converted value would fall out of the range of uint64_t";
+        std::cerr << "parse_num_u64: the converted value would fall out of the range of uint64_t" << "(" << err.what() << ")";
         return {};
     }
     
@@ -318,7 +319,7 @@ inline IOStatus handle_input(int argc, char* argv[], std::vector<std::string>& l
 
     IOStatus result = IOStatus::UNDEFINED;
 
-    std::string_view fname = ""; 
+    std::string fname = ""; 
 
     if (argc <= 1) { // Failure: Program run without arguments.
         std::cerr << "Error: No puzzle input file.\n";
