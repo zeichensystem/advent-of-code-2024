@@ -9,7 +9,7 @@ namespace aocutil
 template<typename T>
 struct Vec2 
 {
-    typedef T value_type;
+    using value_type = T;
     T x, y; 
 
     Vec2 operator+(const Vec2& v) const 
@@ -17,9 +17,23 @@ struct Vec2
         return Vec2{.x = x + v.x, .y = y + v.y};
     }
 
+    Vec2& operator+=(const Vec2& v) 
+    {
+        x += v.x; 
+        y += v.y;
+        return *this;
+    }
+
     Vec2 operator-(const Vec2& v) const 
     {
         return Vec2{.x = x - v.x, .y = y - v.y};
+    }
+
+    Vec2& operator-=(const Vec2& v) 
+    {
+        x -= v.x; 
+        y -= v.y;
+        return *this;
     }
 
     Vec2 operator-() const 

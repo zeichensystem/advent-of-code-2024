@@ -19,7 +19,7 @@
                    of the "touched" bits using a bitmask.)
 */
 
-typedef uint64_t register_int_t;
+using register_int_t = uint64_t;
 struct ComputerParser;
 
 class Computer 

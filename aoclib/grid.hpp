@@ -582,7 +582,7 @@ public:
         assert(std::ssize(data) == width() * height());
         for (int idx = 0; idx < std::ssize(data); ++idx) {
             const Vec2 pos = idx_to_pos(idx);
-            const ElemType& elem = get(pos);
+            const ElemType& elem = at(pos);
             fn(pos, elem);
         }
     }
@@ -590,7 +590,7 @@ public:
         assert(std::ssize(data) == width() * height());
         for (int idx = 0; idx < std::ssize(data); ++idx) {
             const Vec2 pos = idx_to_pos(idx);
-            ElemType& elem = get(pos);
+            ElemType& elem = at(pos);
             fn(pos, elem);
         }
     }
